@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body {
+  background-color: #0d0714 !important;
+  -webkit-touch-callout: none; /* يمنع قائمة خيارات الضغط المطول في Safari */
+  -webkit-user-select: none;   /* يمنع تحديد النصوص في Safari */
+  user-select: none;           /* يمنع تحديد النصوص في باقي المتصفحات */
+
+}
+img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none; /* يمنع التفاعل مع الصورة مباشرة لكليك يمين */
+}
+
+/* إخفاء المحتوى فور الطباعة CTRL+P */
+@media print {
+  body {
+    display: none !important;
+  }
+}
