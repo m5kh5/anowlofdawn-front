@@ -183,15 +183,15 @@ else {
             </div>
           </div>
 
-          {/* غلاف الكتاب */}
+       
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
             <div className="relative group w-full max-w-[320px]">
               
-              {/* التوهج الخلفي */}
+             
               <div className="absolute -inset-1 bg-gradient-to-r from-[#cbd5e1] to-[#a78bfa] rounded-2xl blur-lg opacity-25 group-hover:opacity-50 transition duration-700"></div>
               
-              {/* غلاف الكتاب كـ <button> */}
-              <button className="w-full relative aspect-[3/4] bg-gradient-to-br from-[#1c112b] to-[#0d0714] rounded-2xl border border-[#cbd5e1]/30 group-hover:border-[#a78bfa]/60 shadow-2xl flex flex-col justify-between p-8 text-center transition-all duration-300 transform group-hover:-translate-y-2 cursor-pointer focus:outline-none">
+            
+              <button  className="w-full relative aspect-[3/4] bg-gradient-to-br from-[#1c112b] to-[#0d0714] rounded-2xl border border-[#cbd5e1]/30 group-hover:border-[#a78bfa]/60 shadow-2xl flex flex-col justify-between p-8 text-center transition-all duration-300 transform group-hover:-translate-y-2 cursor-pointer focus:outline-none">
                 
                 {/* الجزء العلوي */}
                 <div className="text-xs font-bold text-[#cbd5e1] tracking-widest group-hover:scale-105 transition duration-300">

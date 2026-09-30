@@ -38,6 +38,33 @@ function Book1arb() {
   }, [currentPageIndex]);
 
 
+
+  // --- التحميل المسبق للصور المجاورة (Preload Next & Previous Images) ---
+useEffect(() => {
+  // نطاق التحميل المسبق (تحميل الصفحتين التاليتين والصفحة السابقة)
+  const indicesToPreload = [
+    currentPageIndex + 1,
+    currentPageIndex + 2,
+    currentPageIndex - 1
+  ];
+
+  indicesToPreload.forEach((index) => {
+    if (index >= 0 && index < pagesList.length) {
+      const img = new Image();
+      img.src = pagesList[index].src;
+    }
+  });
+}, [currentPageIndex, pagesList]);
+
+
+const [isImageLoading, setIsImageLoading] = useState(true);
+
+// تحديث إعادة ضبط الحالة عند تغيير الصفحة
+useEffect(() => {
+  setImageError(false);
+  setIsImageLoading(true); // إعادة التعيين لطلب التحميل الجديد
+}, [currentPageIndex]);
+
   useEffect(() => {
   const handleKeyDown = (e) => {
     // منع DevTools واختصارات عرض المصدر
@@ -412,28 +439,42 @@ function Book1arb() {
                   </svg>
                 </button>
 
-                <div className={`flex items-center justify-center h-full ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
-                  {imageError ? (
-                    <div className="flex flex-col items-center justify-center w-full h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center">
-                      <div className="text-5xl mb-3">📖</div>
-                      <h3 className="text-lg font-bold text-[#a78bfa] mb-1">الصفحة {currentItem.label}</h3>
-                      <p className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1.5 rounded-lg border border-[#231435] mb-2" dir="ltr">
-                        {currentItem.src}
-                      </p>
-                    </div>
-                  ) : (
-                    <img 
-                      src={currentItem.src} 
-                      alt={`صفحة ${currentItem.label}`}
-                      className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
-  isFullscreen 
-    ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
-    : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
-}`}
-                      onError={() => setImageError(true)}
-                    />
-                  )}
-                </div>
+               <div className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
+  {/* مؤشر التحميل أثناء انتظار جلب الصورة */}
+  {isImageLoading && !imageError && (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
+      <div className="w-10 h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-3"></div>
+      <span className="text-xs text-[#a78bfa] font-mono">جاري تحميل الصفحة {currentItem.label}...</span>
+    </div>
+  )}
+
+  {imageError ? (
+    <div className="flex flex-col items-center justify-center w-full h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center">
+      <div className="text-5xl mb-3">📖</div>
+      <h3 className="text-lg font-bold text-[#a78bfa] mb-1">الصفحة {currentItem.label}</h3>
+      <p className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1.5 rounded-lg border border-[#231435] mb-2" dir="ltr">
+        {currentItem.src}
+      </p>
+    </div>
+  ) : (
+    <img 
+      src={currentItem.src} 
+      alt={`صفحة ${currentItem.label}`}
+      onLoad={() => setIsImageLoading(false)} // إخفاء مؤشر التحميل فور الجاهزية
+      onError={() => {
+        setImageError(true);
+        setIsImageLoading(false);
+      }}
+      className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
+        isImageLoading ? 'opacity-0' : 'opacity-100'
+      } ${
+        isFullscreen 
+          ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
+          : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
+      }`}
+    />
+  )}
+</div>
 
                 <button
                   onClick={handleNext}

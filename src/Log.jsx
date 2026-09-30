@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './index.css';
 
-function App() {
+function Log() {
   const { t } = useTranslation();
   const [name, setname] = useState('');
   const [email, setemail] = useState('');
@@ -112,9 +112,15 @@ const [successmsg,setsuccessmsg]=useState('')
         setissucess(true);
         setmessage(data.message);
         if (!isLogin) {
+           localStorage.setItem("username", name)
+          localStorage.setItem("useremail", email)
           setname("");
           setemail("");
           setpassword("");
+          setTimeout(() => {
+            navigate("/")
+          }, 1000);
+
         } else {
           localStorage.setItem("username", data.username)
           localStorage.setItem("useremail", email)
@@ -436,4 +442,4 @@ const [successmsg,setsuccessmsg]=useState('')
   );
 }
 
-export default App;
+export default Log;

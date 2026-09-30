@@ -87,7 +87,7 @@ function Nova() {
           {activeTab === 'ar' && (
             <div className="flex flex-col items-start gap-4 text-right">
               <h1 className="text-3xl font-extrabold text-white">
-                {t('ولادة حكاي')} - النسخة العربية
+                {t('ولادة حكاية')} - النسخة العربية
               </h1>
               <p className="text-gray-300 text-base sm:text-lg leading-relaxed">
                 استمتع بقراءة الفصل الأول من رواية عائلة الأندلس باللغة العربية عبر الموقع الرقمي.

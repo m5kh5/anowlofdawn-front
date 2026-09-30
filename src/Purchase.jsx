@@ -363,13 +363,15 @@ if (selectedBookId === 'BOOK2' || selectedBookId === 'BOOK3') {
                                                         headers: { "Content-Type": "application/json" },
                                                         body: JSON.stringify({ orderID: data.orderID, email ,bookId: selectedBookId}),
                                                     });
-                                                    
                                                     const result = await response.json();
+                                                    console.log("Server said:", result);
+                                                    
+                                                    
 
                                                     if (result.success) {
                                                         setHasAccess(true);
                                                         const lang = i18n.language === 'ar' ? 'ar' : 'eng';
-                                                        navigate(`/${selectedBookId.toLowerCase()}${lang}`);
+                                                       
                                                     } else {
                                                         setErrorMessage(t("Payment verification failed. Please contact support."));
                                                     }
