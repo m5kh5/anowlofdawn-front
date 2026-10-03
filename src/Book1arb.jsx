@@ -16,10 +16,22 @@ function Book1arb() {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
+
+  
+    const [showWarning, setShowWarning] = useState(() => {
+    const hasSeen = localStorage.getItem('hasSeenWarning');
+    return !hasSeen; // إذا لم يرَ التنبيه سابقاً، أظهر الشاشة (true)
+  });
+  
+  const handleCloseWarning = () => {
+    localStorage.setItem('hasSeenWarning', 'true');
+    setShowWarning(false);
+  };
+
   // إعداد مصفوفة الصفحات
   const pagesList = [];
   for (let i = 1; i <= 35; i++) {
-    pagesList.push({ label: `${i}`, src: `/arbimages/${i}.jpg` });
+    pagesList.push({ label: `${i}`, src: `/arbimages/${i}.webp` });
   }
 
   const currentItem = pagesList[currentPageIndex];
@@ -311,6 +323,50 @@ useEffect(() => {
       className="min-h-screen bg-[#0d0714] text-[#f1edf5] font-sans flex flex-col justify-between selection:bg-[#a78bfa] selection:text-black" 
       dir="rtl"
     >
+
+      {/* Warning Modal */}
+{showWarning && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" dir="rtl">
+    <div className="relative w-full max-w-lg bg-[#130a1e] border border-[#a78bfa]/40 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+      
+      {/* زر X في الزاوية اليسرى لأن الاتجاه RTL */}
+      <button 
+        onClick={handleCloseWarning}
+        className="absolute top-4 left-4 text-gray-400 hover:text-white bg-[#0d0714] p-2 rounded-full border border-[#231435] transition"
+      >
+        ✕
+      </button>
+
+      {/* أيقونة وعنوان التحذير */}
+      <div className="text-4xl">⚠️️</div>
+      <h2 className="text-2xl font-extrabold text-[#a78bfa] tracking-wide">
+        تحذير!
+      </h2>
+
+      {/* نص التحذير المترجم */}
+      <div className="text-gray-300 text-sm leading-relaxed space-y-3 bg-[#0d0714] p-4 rounded-xl border border-[#231435] text-right">
+        <p>
+          صفقة الشراء التي قمت بها تتيح لك قراءة هذه المانجا عبر الإنترنت من خلال الموقع فقط.
+        </p>
+        <p className="text-rose-400/90 font-medium">
+          يُمنع منعاً باتاً نسخ أو إعادة نشر أو بيع أي فصل من هذه المانجا. وفي حال حدوث ذلك، ستتخذ الإجراءات القانونية اللازمة.
+        </p>
+        <p className="text-amber-300/90 font-medium">
+          كما يُحظر استخدام أي صفحة من هذه المانجا لتدريب الذكاء الاصطناعي (AI).
+        </p>
+      </div>
+
+      {/* زر الفهم والإغلاق */}
+      <button
+        onClick={handleCloseWarning}
+        className="w-full bg-[#a78bfa] hover:bg-[#c4b5fd] text-[#0d0714] font-extrabold py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer"
+      >
+        أفهم ذلك وموافق
+      </button>
+
+    </div>
+  </div>
+)}
       
       {/* Navbar */}
       <nav className="w-full px-8 py-5 flex justify-between items-center bg-[#0d0714] border-b border-[#1a0f2b] sticky top-0 z-50">
@@ -385,129 +441,141 @@ useEffect(() => {
               </div>
             </aside>
 
-            <section className="lg:col-span-9 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between items-center min-h-[75vh]">
-              <div className="w-full flex justify-between items-center border-b border-[#231435] pb-4 mb-4">
-                <span className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1 rounded-lg border border-[#231435]">
-                  صفحة {currentItem.label}
-                </span>
-                <span className="text-sm font-semibold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1 rounded-lg border border-[#a78bfa]/20">
-                  الفصل الأول
-                </span>
-              </div>
+           <section className="lg:col-span-9 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between items-center min-h-[75vh]">
+  
+  {/* الشريط العلوي لترقيم الفصل والصورة */}
+  <div className="w-full flex justify-between items-center border-b border-[#231435] pb-4 mb-4" dir="rtl">
+    <span className="text-sm font-semibold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1 rounded-lg border border-[#a78bfa]/20">
+      الفصل 1
+    </span>
+    <span className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1 rounded-lg border border-[#231435]">
+      صفحة {currentItem.label}
+    </span>
+  </div>
 
-              <div 
-                ref={imageContainerRef}
-                onMouseMove={handleMouseMove}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-                className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
-  isFullscreen 
-    ? 'max-h-[96vh] max-w-full' 
-    : currentItem.label === '18'
-      ? 'w-full max-h-[75vh]' // تجعل الصورة المربعة تتوسع بكامل عرض الحاوية الجديدة
-      : 'w-full max-h-[80vh] sm:max-h-[85vh]'
-}`}
-              >
-                {isFullscreen && (
-                  <button
-                    onClick={toggleFullscreen}
-                    className={`absolute top-6 left-6 z-20 bg-[#231435]/90 hover:bg-red-500 text-white p-3 rounded-full border border-white/20 shadow-2xl transition-all duration-300 cursor-pointer backdrop-blur-md ${
-                      showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                    }`}
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
+  {/* حاوية الصورة والتحكم بالقياسات المضبوطة */}
+  <div 
+    ref={imageContainerRef}
+    onMouseMove={handleMouseMove}
+    onTouchStart={handleTouchStart}
+    onTouchEnd={handleTouchEnd}
+    className={`relative flex-grow flex items-center justify-between my-2 bg-[#0d0714] border-[#231435]/50 transition-all duration-300 select-none ${
+      currentItem.label === '18' ? 'overflow-visible' : 'overflow-hidden'
+    } ${
+      isFullscreen 
+        ? 'w-full h-full p-4 justify-center bg-[#050308]' 
+        : `w-full rounded-xl border p-2 transition-all duration-300 ${
+            currentItem.label === '18' 
+              ? 'max-w-5xl min-h-[500px]' 
+              : 'max-w-3xl min-h-[650px] sm:min-h-[750px]'
+          }`
+    } ${isFullscreen && !showControls ? 'cursor-none' : 'cursor-default'}`}
+  >
+    {isFullscreen && (
+      <button
+        onClick={toggleFullscreen}
+        className={`absolute top-6 left-6 z-20 bg-[#231435]/90 hover:bg-red-500 text-white p-3 rounded-full border border-white/20 shadow-2xl transition-all duration-300 cursor-pointer backdrop-blur-md ${
+          showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        title="خروج من الشاشة الكاملة"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    )}
 
-                <button
-                  onClick={handlePrev}
-                  disabled={currentPageIndex === 0}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed right-6 sm:right-12 top-1/2 -translate-y-1/2' : ''
-                  } ${
-                    isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-                  } ${
-                    currentPageIndex === 0
-                      ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
-                      : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-               <div className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
-  {/* مؤشر التحميل أثناء انتظار جلب الصورة */}
-  {isImageLoading && !imageError && (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
-      <div className="w-10 h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-3"></div>
-      <span className="text-xs text-[#a78bfa] font-mono">جاري تحميل الصفحة {currentItem.label}...</span>
-    </div>
-  )}
-
-  {imageError ? (
-    <div className="flex flex-col items-center justify-center w-full h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center">
-      <div className="text-5xl mb-3">📖</div>
-      <h3 className="text-lg font-bold text-[#a78bfa] mb-1">الصفحة {currentItem.label}</h3>
-      <p className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1.5 rounded-lg border border-[#231435] mb-2" dir="ltr">
-        {currentItem.src}
-      </p>
-    </div>
-  ) : (
-    <img 
-      src={currentItem.src} 
-      alt={`صفحة ${currentItem.label}`}
-      onLoad={() => setIsImageLoading(false)} // إخفاء مؤشر التحميل فور الجاهزية
-      onError={() => {
-        setImageError(true);
-        setIsImageLoading(false);
-      }}
-      className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
-        isImageLoading ? 'opacity-0' : 'opacity-100'
+    {/* زر السابق */}
+    <button
+      onClick={handlePrev}
+      disabled={currentPageIndex === 0}
+      className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
+        isFullscreen ? 'fixed left-6 sm:left-12 top-1/2 -translate-y-1/2' : ''
       } ${
-        isFullscreen 
-          ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
-          : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
+        isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
+      } ${
+        currentPageIndex === 0
+          ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
+          : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
       }`}
-    />
-  )}
-</div>
+    >
+      <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
 
-                <button
-                  onClick={handleNext}
-                  disabled={currentPageIndex === totalItems - 1}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed left-6 sm:left-12 top-1/2 -translate-y-1/2' : ''
-                  } ${
-                    isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-                  } ${
-                    currentPageIndex === totalItems - 1
-                      ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
-                      : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              </div>
+    {/* حاوية عرض الصورة */}
+    <div className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
+      {isImageLoading && !imageError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
+          <div className="w-10 h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-3"></div>
+          <span className="text-xs text-[#a78bfa] font-mono">جاري التحميل...{currentItem.label}</span>
+        </div>
+      )}
 
-              <div className="w-full flex justify-center items-center pt-4 border-t border-[#231435] mt-4">
-                <button
-                  onClick={toggleFullscreen}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-sm transition duration-200 flex items-center gap-2 cursor-pointer border ${
-                    isFullscreen
-                      ? 'bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border-red-500/30'
-                      : 'bg-[#231435] hover:bg-[#a78bfa] text-[#a78bfa] hover:text-[#0d0714] border-[#3b2259]'
-                  }`}
-                >
-                  {isFullscreen ? 'إلغاء ملء الشاشة' : 'عرض الشاشة كاملة'}
-                </button>
-              </div>
-            </section>
+      {imageError ? (
+        <div className="flex flex-col items-center justify-center w-full h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center" dir="rtl">
+          <div className="text-5xl mb-3">📖</div>
+          <h3 className="text-lg font-bold text-[#a78bfa] mb-1">صفحة {currentItem.label}</h3>
+          <p className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1.5 rounded-lg border border-[#231435] mb-2" dir="ltr">
+            {currentItem.src}
+          </p>
+        </div>
+      ) : (
+        <img 
+          src={currentItem.src} 
+          alt={`صفحة ${currentItem.label}`}
+          onLoad={() => setIsImageLoading(false)}
+          onError={() => {
+            setImageError(true);
+            setIsImageLoading(false);
+          }}
+          className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
+            isImageLoading ? 'opacity-0' : 'opacity-100'
+          } ${
+            isFullscreen 
+              ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
+              : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
+          }`}
+        />
+      )}
+    </div>
+
+    {/* زر التالي */}
+    <button
+      onClick={handleNext}
+      disabled={currentPageIndex === totalItems - 1}
+      className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
+        isFullscreen ? 'fixed right-6 sm:right-12 top-1/2 -translate-y-1/2' : ''
+      } ${
+        isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
+      } ${
+        currentPageIndex === totalItems - 1
+          ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
+          : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
+      }`}
+    >
+      <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  </div>
+
+  {/* زر وضع الشاشة الكاملة */}
+  <div className="w-full flex justify-center items-center pt-4 border-t border-[#231435] mt-4" dir="rtl">
+    <button
+      onClick={toggleFullscreen}
+      className={`px-6 py-2.5 rounded-xl font-bold text-sm transition duration-200 flex items-center gap-2 cursor-pointer shadow-md border ${
+        isFullscreen
+          ? 'bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border-red-500/30'
+          : 'bg-[#231435] hover:bg-[#a78bfa] text-[#a78bfa] hover:text-[#0d0714] border-[#3b2259] hover:border-[#a78bfa]'
+      }`}
+    >
+      {isFullscreen ? 'الخروج من الشاشة الكاملة' : 'عرض ملء الشاشة'}
+    </button>
+  </div>
+
+</section>
           </div>
         )}
 

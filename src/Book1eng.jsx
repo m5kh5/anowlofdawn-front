@@ -11,15 +11,41 @@ function Book1eng() {
   const [showControls, setShowControls] = useState(true);
   const [imageError, setImageError] = useState(false);
 
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
   const imageContainerRef = useRef(null);
   const hideControlsTimer = useRef(null);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+  setImageError(false);
+  setIsImageLoading(true);
+  setZoom(1); // جديد
+}, [currentPageIndex]);
+
+const pinchStartDist = useRef(null);
+const pinchStartZoom = useRef(1);
+const dragging = useRef(false);
+const lastPos = useRef({ x: 0, y: 0 });
+const zoomWrapRef = useRef(null);
+
+
+  const [showWarning, setShowWarning] = useState(() => {
+  const hasSeen = localStorage.getItem('hasSeenWarning');
+  return !hasSeen; // إذا لم يرَ التنبيه سابقاً، أظهر الشاشة (true)
+});
+
+const handleCloseWarning = () => {
+  localStorage.setItem('hasSeenWarning', 'true');
+  setShowWarning(false);
+};
 
   const pagesList = [];
   for (let i = 1; i <= 35; i++) {
-    pagesList.push({ label: `${i}`, src: `/engimages/${i}.jpg` });
+    pagesList.push({ label: `${i}`, src: `/engimages/${i}.webp` });
 
 
   }
@@ -84,26 +110,54 @@ function Book1eng() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, activeTab]);
 
-  // التمرير باللمس للأجهزة المحمولة
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.changedTouches[0].screenX;
-  };
+ const handleTouchStart = (e) => {
+  if (e.touches.length === 2) {
+    pinchStartDist.current = getDist(e.touches);
+    pinchStartZoom.current = zoom;
+    return;
+  }
+  touchStartX.current = e.changedTouches[0].screenX;
+};
 
-  const handleTouchEnd = (e) => {
-    touchEndX.current = e.changedTouches[0].screenX;
-    handleSwipeGesture();
-  };
+const handleTouchMove = (e) => {
+  if (e.touches.length === 2 && pinchStartDist.current) {
+    setZoom(clampZoom(pinchStartZoom.current * (getDist(e.touches) / pinchStartDist.current)));
+  }
+};
 
-  const handleSwipeGesture = () => {
-    const swipeThreshold = 50;
-    const distance = touchStartX.current - touchEndX.current;
+const handleTouchEnd = (e) => {
+  if (pinchStartDist.current) {
+    if (e.touches.length === 0) pinchStartDist.current = null;
+    return; // لا تقلب الصفحة بعد القرص
+  }
+  if (isFullscreen && zoom > 1) return; // وأنت مكبّر السحب للتحرك مو لقلب الصفحة
+  touchEndX.current = e.changedTouches[0].screenX;
+  handleSwipeGesture();
+};
 
-    if (distance > swipeThreshold) {
-      handleNext();
-    } else if (distance < -swipeThreshold) {
-      handlePrev();
-    }
-  };
+  const clampZoom = (z) => Math.min(4, Math.max(1, +z.toFixed(2)));
+const getDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+// عجلة الماوس
+const handleWheel = (e) => {
+  if (!isFullscreen) return;
+  setZoom((z) => clampZoom(z - e.deltaY * 0.002));
+};
+
+// سحب بالماوس للتحرك داخل الصورة المكبّرة
+const handleMouseDown = (e) => {
+  if (zoom <= 1) return;
+  dragging.current = true;
+  lastPos.current = { x: e.clientX, y: e.clientY };
+};
+const handleDragMove = (e) => {
+  if (!dragging.current || !zoomWrapRef.current) return;
+  zoomWrapRef.current.scrollLeft -= e.clientX - lastPos.current.x;
+  zoomWrapRef.current.scrollTop -= e.clientY - lastPos.current.y;
+  lastPos.current = { x: e.clientX, y: e.clientY };
+};
+const stopDrag = () => { dragging.current = false; };
+  
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -135,7 +189,7 @@ useEffect(() => {
 }, [currentPageIndex, pagesList]);
 
 
-const [isImageLoading, setIsImageLoading] = useState(true);
+
 
 // تحديث إعادة ضبط الحالة عند تغيير الصفحة
 useEffect(() => {
@@ -320,6 +374,45 @@ useEffect(() => {
       className="min-h-screen bg-[#0d0714] text-[#f1edf5] font-sans flex flex-col justify-between selection:bg-[#a78bfa] selection:text-black" 
       dir="ltr"
     >
+
+      {/* Warning Modal */}
+{showWarning && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" dir="ltr">
+    <div className="relative w-full max-w-lg bg-[#130a1e] border border-[#a78bfa]/40 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+      
+      {/* زر X في الزاوية */}
+      
+
+      {/* أيقونة وعنوان التحذير */}
+      <div className="text-4xl">⚠️</div>
+      <h2 className="text-2xl font-extrabold text-[#a78bfa] tracking-wide">
+        Warning!
+      </h2>
+
+      {/* نص التحذير المطلوب */}
+      <div className="text-gray-300 text-sm leading-relaxed space-y-3 bg-[#0d0714] p-4 rounded-xl border border-[#231435]">
+        <p>
+          The purchase deal you made allows you to read this manga online on the website only.
+        </p>
+        <p className="text-rose-400/90 font-medium">
+          It is entirely illegal to copy, repost or sell any chapter of this manga. When this is done legal actions will be taken.
+        </p>
+        <p className="text-amber-300/90 font-medium">
+          Also, the use of any page of this manga to train AI (Artificial Intelligence) is prohibited.
+        </p>
+      </div>
+
+      {/* زر الفهم والإغلاق */}
+      <button
+        onClick={handleCloseWarning}
+        className="w-full bg-[#a78bfa] hover:bg-[#c4b5fd] text-[#0d0714] font-extrabold py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer"
+      >
+        I Understand
+      </button>
+
+    </div>
+  </div>
+)}
       
    
       <nav className="w-full px-8 py-5 flex justify-between items-center bg-[#0d0714] border-b border-[#1a0f2b] sticky top-0 z-50">
@@ -416,6 +509,7 @@ useEffect(() => {
                 onMouseMove={handleMouseMove}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchMove}
                 className={`relative flex-grow flex items-center justify-between my-2 ${currentItem.label === '18' ? 'overflow-visible' : 'overflow-hidden'}bg-[#0d0714] border-[#231435]/50 transition-all duration-300 select-none ${
                   isFullscreen 
                     ? 'w-full h-full p-4 justify-center bg-[#050308]' 
@@ -460,7 +554,17 @@ useEffect(() => {
                 </button>
 
                 
-               <div className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
+               <div
+               ref={zoomWrapRef}
+  onWheel={handleWheel}
+  onMouseDown={handleMouseDown}
+  onMouseMove={handleDragMove}
+  onMouseUp={stopDrag}
+  onMouseLeave={stopDrag}
+  style={isFullscreen ? { touchAction: 'pan-x pan-y' } : undefined}
+               
+               
+               className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
   {/* مؤشر التحميل أثناء انتظار جلب الصورة */}
   {isImageLoading && !imageError && (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
@@ -485,7 +589,15 @@ useEffect(() => {
       onError={() => {
         setImageError(true);
         setIsImageLoading(false);
+
+
       }}
+      style={
+    isFullscreen && zoom > 1
+      ? { height: `${96 * zoom}vh`, width: 'auto', maxHeight: 'none', maxWidth: 'none', margin: 'auto', flexShrink: 0 }
+      : undefined
+  }
+      
       className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
         isImageLoading ? 'opacity-0' : 'opacity-100'
       } ${

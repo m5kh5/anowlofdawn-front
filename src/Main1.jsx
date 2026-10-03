@@ -97,6 +97,12 @@ else {
        <nav className="sticky top-0 z-50 bg-[#160d22]/95 backdrop-blur-md border-b border-[#2d1b42] px-8 py-4 flex justify-between items-center">
   {/* القسم الأيسر: اللوجو فقط */}
   <div className='flex items-center space-x-6 space-x-reverse'>
+    <img 
+    src="/owl1.png" 
+    alt="Logo Icon" 
+    className="w-8 h-8 object-contain" 
+  />
+
     <div className="text-2xl font-black tracking-wider text-[#cbd5e1]">
       An Owl<span className="text-[#a78bfa] font-light"> of Dawn</span>
     </div>
@@ -158,7 +164,7 @@ else {
 </nav>
 
         {/* 2. القسم الرئيسي المطور - Hero Section */}
-        <header className="max-w-7xl mx-auto px-8 py-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+       <header className="max-w-7xl mx-auto px-8 py-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* النصوص والتحفيز */}
           <div className="lg:col-span-7 text-right">
             <span className="text-xs font-bold tracking-widest text-[#cbd5e1] uppercase bg-[#cbd5e1]/10 px-3 py-1 rounded-md border border-[#cbd5e1]/20">
@@ -191,28 +197,38 @@ else {
               <div className="absolute -inset-1 bg-gradient-to-r from-[#cbd5e1] to-[#a78bfa] rounded-2xl blur-lg opacity-25 group-hover:opacity-50 transition duration-700"></div>
               
             
-              <button  className="w-full relative aspect-[3/4] bg-gradient-to-br from-[#1c112b] to-[#0d0714] rounded-2xl border border-[#cbd5e1]/30 group-hover:border-[#a78bfa]/60 shadow-2xl flex flex-col justify-between p-8 text-center transition-all duration-300 transform group-hover:-translate-y-2 cursor-pointer focus:outline-none">
-                
-                {/* الجزء العلوي */}
-                <div className="text-xs font-bold text-[#cbd5e1] tracking-widest group-hover:scale-105 transition duration-300">
-                  {t('Chapter 1')}
-                </div>
-                
-                {/* الجزء الأوسط */}
-                <div className="my-auto py-8">
-                  <div className="text-6xl mb-4 transform group-hover:scale-110 transition duration-300">📘</div>
-                  <h2 className="text-2xl font-bold text-white tracking-wide group-hover:text-[#a78bfa] transition duration-300">
-                    {t('AL Andalos Family  Trailer 1')}
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-2">{t('BY Fatima Al Wisam')} </p>
-                </div>
-                
-                {/* الجزء السفلي التفاعلي */}
-                <div className="text-[11px] text-[#a78bfa] opacity-0 group-hover:opacity-100 transition duration-300 font-medium">
-                  {t('Tap to open')} ↗
-                </div>
+          <button 
+  onClick={() => window.open("https://m.youtube.com/watch?v=bk1dM5fKSpY&pp=ygUbQWwgQW5kYWxvcyBGYW1pbHkgVHJhaWxlciAx", "_blank", "noopener,noreferrer")}
+  className="w-full relative aspect-[3/4] bg-[#0d0714] rounded-2xl border border-[#cbd5e1]/30 group-hover:border-[#a78bfa]/60 shadow-2xl flex flex-col justify-between p-8 text-center transition-all duration-300 transform group-hover:-translate-y-2 cursor-pointer focus:outline-none group overflow-hidden"
+>
+  {/* صورة الخلفية */}
+  <img 
+    src="youtube.jpg" // 👈 ضع رابط الصورة هنا
+    alt="Trailer Cover"
+    className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-500 group-hover:scale-110"
+  />
 
-              </button>
+  {/* طبقة تدرج لوني داكن لضمان وضوح الكتابة فوق الصورة */}
+  <div className="absolute inset-0 bg-gradient-to-t from-[#0d0714] via-[#0d0714]/60 to-[#1c112b]/40 pointer-events-none"></div>
+
+  {/* الجزء العلوي */}
+  <div className="text-xs font-bold text-[#cbd5e1] tracking-widest group-hover:scale-105 transition duration-300 relative z-10">
+    {t('Chapter 1')}
+  </div>
+  
+  {/* الجزء الأوسط */}
+  <div className="my-auto py-8 relative z-10">
+    <h2 className="text-2xl font-bold text-white tracking-wide group-hover:text-[#a78bfa] transition duration-300">
+      {t('AL Andalos Family Trailer 1')}
+    </h2>
+    <p className="text-xs text-gray-300 mt-2">{t('BY Fatima Al Wisam')}</p>
+  </div>
+  
+  {/* الجزء السفلي التفاعلي */}
+  <div className="text-[11px] text-[#a78bfa] opacity-0 group-hover:opacity-100 transition duration-300 font-medium relative z-10">
+    {t('Tap to open')} ↗
+  </div>
+</button>
 
             </div>
           </div>
@@ -222,73 +238,91 @@ else {
         <section id="chapters" className="bg-[#160d22] py-20 border-t border-[#2d1b42]">
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex justify-between items-center mb-12 border-r-4 border-[#cbd5e1] pr-4">
-              <h3 className="text-2xl md:text-3xl font-bold text-white">{t('AL Andalos Family Title')}</h3>
+              <h3 className="text-2xl md:text-3xl font-bold text-white">{t(' The Chapters Titles')}</h3>
             
             </div>
 
             {/* شبكة الفصول */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { no: "1", title: t("The Birth of a Tale"), duration: `30 ${t('Pages')}` },
-                { no: "2", title: t("The Rules of the Game"), duration: `30 ${t('Pages')}` },
-                { no: "3", title: t("Content for Being in a Family"), duration: `30 ${t('Pages')}` },
-                { no: "4", title: t("The Hunted Palace"), duration: `30 ${t('Pages')}` },
-              ].map((chapter, index) => {
-                const cardContent = (
-                  <div className="bg-[#0d0714] rounded-xl overflow-hidden border border-[#2d1b42] hover:border-[#cbd5e1]/40 transition-all duration-300 group cursor-pointer flex flex-col justify-between h-56 p-5">
-                    <div className="flex justify-between items-start">
-                      <span className="text-sm font-mono text-[#cbd5e1] bg-[#cbd5e1]/10 px-2 py-0.5 rounded">
-                        {t('Chapter')} {chapter.no}
-                      </span>
-                      <span className="text-xs text-gray-400 bg-[#160d22] px-2 py-1 rounded border border-[#2d1b42]" dir='ltr'>
-                        {chapter.duration}
-                      </span>
-                    </div>
-                    <div className="text-right mt-auto">
-                      <h4 className="font-bold text-lg text-white group-hover:text-[#cbd5e1] transition duration-300 line-clamp-2">
-                        {chapter.title}
-                      </h4>
-                      <p className="text-xs text-gray-400 mt-2">{t('Click to read')}</p>
-                    </div>
-                  </div>
-                );
+   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {[
+    { no: "1", title: t("The Birth of a Tale"), duration: `30 ${t('Pages')}` },
+    { no: "2", title: t("The Rules of the Game"), duration: `30 ${t('Pages')}` },
+    { no: "3", title: t("Content for Being in a Family"), duration: `30 ${t('Pages')}` },
+    { no: "4", title: t("The Hunted Palace"), duration: `30 ${t('Pages')}` },
+  ].map((chapter, index) => {
+    const cardContent = (
+      <div className="relative bg-[#0d0714] rounded-xl overflow-hidden border border-[#2d1b42] hover:border-[#cbd5e1]/40 transition-all duration-300 group cursor-pointer flex flex-col justify-between h-56 p-5">
+        
+        {/* صورة الخلفية الموحدة لجميع الكروت */}
+        <img 
+          src="chall.jpg" // 👈 ضع رابط الصورة الموحدة هنا
+          alt={chapter.title} 
+          className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-500 group-hover:scale-110 pointer-events-none"
+        />
 
-                if (index === 0) {
+        {/* طبقة تظليل داكنة لضمان وضوح النص فوق الصورة */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0714] via-[#0d0714]/70 to-[#0d0714]/30 pointer-events-none"></div>
 
-                  return  hasaccess  ?(
-                    <Link key={index} to="/Nova" className="block no-underline">
-      {cardContent}
-    </Link>
-                  ):(<button 
-      key={index} 
-      onClick={buyclick} 
-      className="block w-full border-0 bg-transparent p-0 cursor-pointer text-right no-underline"
-    >
-      {cardContent}
-    </button>)
-                }
-                if(index>0){
-                 return (
-    <div key={index} className="w-full">
-      <button 
-        onClick={() => setselectedchapter(index)} 
-        className="block w-full border-0 bg-transparent p-0 cursor-pointer text-right no-underline"
-      >
-        {cardContent}
-      </button>
-
-      {/* يظهر النص الكبير فقط إذا تم الضغط على هذا الشابتر بالذات */}
-      {selectedchapter === index && (
-        <div className="text-xl font-extrabold text-[#a78bfa] text-center mt-3 animate-pulse">
-          {t('Chapter not released yet!')}
+        {/* الجزء العلوي */}
+        <div className="flex justify-between items-start relative z-10">
+          <span className="text-sm font-mono text-[#cbd5e1] bg-[#cbd5e1]/10 backdrop-blur-md px-2 py-0.5 rounded border border-[#cbd5e1]/20">
+            {t('Chapter')} {chapter.no}
+          </span>
+          <span className="text-xs text-gray-400 bg-[#160d22]/80 backdrop-blur-md px-2 py-1 rounded border border-[#2d1b42]" dir='ltr'>
+            {chapter.duration}
+          </span>
         </div>
-      )}
-    </div>
-  );
-                }
 
-                return <div key={index}>{cardContent}</div>;
-              })}
+        {/* الجزء السفلي */}
+        <div className="text-right mt-auto relative z-10">
+          <h4 className="font-bold text-lg text-white group-hover:text-[#a78bfa] transition duration-300 line-clamp-2">
+            {chapter.title}
+          </h4>
+          <p className="text-xs text-gray-400 mt-2">{t('Click to read')}</p>
+        </div>
+      </div>
+    );
+
+    if (index === 0) {
+      return hasaccess ? (
+        <Link key={index} to="/Nova" className="block no-underline">
+          {cardContent}
+        </Link>
+      ) : (
+        <button 
+          key={index} 
+          onClick={buyclick} 
+          className="block w-full border-0 bg-transparent p-0 cursor-pointer text-right no-underline"
+        >
+          {cardContent}
+        </button>
+      );
+    }
+
+    if (index > 0) {
+      return (
+        <div key={index} className="w-full">
+          <button 
+            onClick={() => setselectedchapter(index)} 
+            className="block w-full border-0 bg-transparent p-0 cursor-pointer text-right no-underline"
+          >
+            {cardContent}
+          </button>
+
+          {/* يظهر النص الكبير فقط إذا تم الضغط على هذا الشابتر بالذات */}
+          {selectedchapter === index && (
+            <div className="text-xl font-extrabold text-[#a78bfa] text-center mt-3 animate-pulse">
+              {index === 1 && t(' will be released in 6/11/2026')}
+              {index === 2 && t(' will be released soon')}
+              {index === 3 && t(' will be released soon')}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return <div key={index}>{cardContent}</div>;
+  })}
 </div>
           </div>
         </section>
