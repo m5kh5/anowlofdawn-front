@@ -201,9 +201,11 @@ else {
   onClick={() => window.open("https://m.youtube.com/watch?v=bk1dM5fKSpY&pp=ygUbQWwgQW5kYWxvcyBGYW1pbHkgVHJhaWxlciAx", "_blank", "noopener,noreferrer")}
   className="w-full relative aspect-[3/4] bg-[#0d0714] rounded-2xl border border-[#cbd5e1]/30 group-hover:border-[#a78bfa]/60 shadow-2xl flex flex-col justify-between p-8 text-center transition-all duration-300 transform group-hover:-translate-y-2 cursor-pointer focus:outline-none group overflow-hidden"
 >
+
+  
   {/* صورة الخلفية */}
   <img 
-    src="youtube.jpg" // 👈 ضع رابط الصورة هنا
+    src="youtube.webp" // 👈 ضع رابط الصورة هنا
     alt="Trailer Cover"
     className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-500 group-hover:scale-110"
   />
@@ -255,7 +257,7 @@ else {
         
         {/* صورة الخلفية الموحدة لجميع الكروت */}
         <img 
-          src="chall.jpg" // 👈 ضع رابط الصورة الموحدة هنا
+          src="chall.webp" // 👈 ضع رابط الصورة الموحدة هنا
           alt={chapter.title} 
           className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-500 group-hover:scale-110 pointer-events-none"
         />
@@ -312,9 +314,9 @@ else {
           {/* يظهر النص الكبير فقط إذا تم الضغط على هذا الشابتر بالذات */}
           {selectedchapter === index && (
             <div className="text-xl font-extrabold text-[#a78bfa] text-center mt-3 animate-pulse">
-              {index === 1 && t(' will be released in 6/11/2026')}
-              {index === 2 && t(' will be released soon')}
-              {index === 3 && t(' will be released soon')}
+              {index === 1 && t('will be released soon in November')}
+              {index === 2 && t('Will be released soon in December')}
+              {index === 3 && t('Will be released soon in January')}
             </div>
           )}
         </div>

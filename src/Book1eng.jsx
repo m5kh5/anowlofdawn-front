@@ -21,35 +21,38 @@ function Book1eng() {
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-  setImageError(false);
-  setIsImageLoading(true);
-  setZoom(1); // جديد
-}, [currentPageIndex]);
+    setImageError(false);
+    setIsImageLoading(true);
+    setZoom(1);
+  }, [currentPageIndex]);
 
-const pinchStartDist = useRef(null);
-const pinchStartZoom = useRef(1);
-const dragging = useRef(false);
-const lastPos = useRef({ x: 0, y: 0 });
-const zoomWrapRef = useRef(null);
-
+  const pinchStartDist = useRef(null);
+  const pinchStartZoom = useRef(1);
+  const dragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+  const zoomWrapRef = useRef(null);
 
   const [showWarning, setShowWarning] = useState(() => {
-  const hasSeen = localStorage.getItem('hasSeenWarning');
-  return !hasSeen; // إذا لم يرَ التنبيه سابقاً، أظهر الشاشة (true)
-});
+    const hasSeen = localStorage.getItem('hasSeenWarning');
+    return !hasSeen;
+  });
 
-const handleCloseWarning = () => {
-  localStorage.setItem('hasSeenWarning', 'true');
-  setShowWarning(false);
-};
+  const handleCloseWarning = () => {
+    localStorage.setItem('hasSeenWarning', 'true');
+    setShowWarning(false);
+  };
+
+  const API_BASE_URL = "https://anowlofdawn.onrender.com";
+
+  const userEmail = localStorage.getItem("useremail") || "";
 
   const pagesList = [];
   for (let i = 1; i <= 35; i++) {
-    pagesList.push({ label: `${i}`, src: `/engimages/${i}.webp` });
-
-
+    pagesList.push({ 
+      label: `${i}`, 
+      src: `${API_BASE_URL}/api/books/BOOK11/page/${i}.webp?email=${encodeURIComponent(userEmail)}` 
+    });
   }
-  
 
   const currentItem = pagesList[currentPageIndex];
   const totalItems = pagesList.length;
@@ -62,38 +65,35 @@ const handleCloseWarning = () => {
     setCurrentPageIndex((prev) => (prev > 0 ? prev - 1 : prev));
   }, []);
 
-  // إعادة ضبط حالة الخطأ عند تغيير الصفحة
   useEffect(() => {
     setImageError(false);
   }, [currentPageIndex]);
 
-  // i cant 
   useEffect(() => {
-  const handleKeyDown = (e) => {
-    // منع DevTools واختصارات عرض المصدر
-    if (
-      e.key === 'F12' ||
-      (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
-      (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
-    ) {
-      e.preventDefault();
-    }
-  };
+    const handleKeyDown = (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    };
 
-  // منع زر الفأرة الأيمن وسحب الصور
-  const handleContextMenu = (e) => e.preventDefault();
-  const handleDragStart = (e) => e.preventDefault();
+    const handleContextMenu = (e) => e.preventDefault();
+    const handleDragStart = (e) => e.preventDefault();
 
-  window.addEventListener('keydown', handleKeyDown);
-  window.addEventListener('contextmenu', handleContextMenu);
-  window.addEventListener('dragstart', handleDragStart);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('dragstart', handleDragStart);
 
-  return () => {
-    window.removeEventListener('keydown', handleKeyDown);
-    window.removeEventListener('contextmenu', handleContextMenu);
-    window.removeEventListener('dragstart', handleDragStart);
-  };
-}, []);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
@@ -110,54 +110,59 @@ const handleCloseWarning = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, activeTab]);
 
- const handleTouchStart = (e) => {
-  if (e.touches.length === 2) {
-    pinchStartDist.current = getDist(e.touches);
-    pinchStartZoom.current = zoom;
-    return;
-  }
-  touchStartX.current = e.changedTouches[0].screenX;
-};
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      pinchStartDist.current = getDist(e.touches);
+      pinchStartZoom.current = zoom;
+      return;
+    }
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
 
-const handleTouchMove = (e) => {
-  if (e.touches.length === 2 && pinchStartDist.current) {
-    setZoom(clampZoom(pinchStartZoom.current * (getDist(e.touches) / pinchStartDist.current)));
-  }
-};
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchStartDist.current) {
+      setZoom(clampZoom(pinchStartZoom.current * (getDist(e.touches) / pinchStartDist.current)));
+    }
+  };
 
-const handleTouchEnd = (e) => {
-  if (pinchStartDist.current) {
-    if (e.touches.length === 0) pinchStartDist.current = null;
-    return; // لا تقلب الصفحة بعد القرص
-  }
-  if (isFullscreen && zoom > 1) return; // وأنت مكبّر السحب للتحرك مو لقلب الصفحة
-  touchEndX.current = e.changedTouches[0].screenX;
-  handleSwipeGesture();
-};
+  const handleTouchEnd = (e) => {
+    if (pinchStartDist.current) {
+      if (e.touches.length === 0) pinchStartDist.current = null;
+      return;
+    }
+    if (isFullscreen && zoom > 1) return;
+    touchEndX.current = e.changedTouches[0].screenX;
+    
+    // سحب باللمس لقلب الصفحة
+    const diffX = touchStartX.current - touchEndX.current;
+    if (Math.abs(diffX) > 40) {
+      if (diffX > 0) handleNext();
+      else handlePrev();
+    }
+  };
 
   const clampZoom = (z) => Math.min(4, Math.max(1, +z.toFixed(2)));
-const getDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const getDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
-// عجلة الماوس
-const handleWheel = (e) => {
-  if (!isFullscreen) return;
-  setZoom((z) => clampZoom(z - e.deltaY * 0.002));
-};
+  const handleWheel = (e) => {
+    if (!isFullscreen) return;
+    setZoom((z) => clampZoom(z - e.deltaY * 0.002));
+  };
 
-// سحب بالماوس للتحرك داخل الصورة المكبّرة
-const handleMouseDown = (e) => {
-  if (zoom <= 1) return;
-  dragging.current = true;
-  lastPos.current = { x: e.clientX, y: e.clientY };
-};
-const handleDragMove = (e) => {
-  if (!dragging.current || !zoomWrapRef.current) return;
-  zoomWrapRef.current.scrollLeft -= e.clientX - lastPos.current.x;
-  zoomWrapRef.current.scrollTop -= e.clientY - lastPos.current.y;
-  lastPos.current = { x: e.clientX, y: e.clientY };
-};
-const stopDrag = () => { dragging.current = false; };
-  
+  const handleMouseDown = (e) => {
+    if (zoom <= 1) return;
+    dragging.current = true;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleDragMove = (e) => {
+    if (!dragging.current || !zoomWrapRef.current) return;
+    zoomWrapRef.current.scrollLeft -= e.clientX - lastPos.current.x;
+    zoomWrapRef.current.scrollTop -= e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const stopDrag = () => { dragging.current = false; };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -171,31 +176,25 @@ const stopDrag = () => { dragging.current = false; };
     }
   };
 
+  useEffect(() => {
+    const indicesToPreload = [
+      currentPageIndex + 1,
+      currentPageIndex + 2,
+      currentPageIndex - 1
+    ];
 
-useEffect(() => {
+    indicesToPreload.forEach((index) => {
+      if (index >= 0 && index < pagesList.length) {
+        const img = new Image();
+        img.src = pagesList[index].src;
+      }
+    });
+  }, [currentPageIndex, pagesList]);
 
-  const indicesToPreload = [
-    currentPageIndex + 1,
-    currentPageIndex + 2,
-    currentPageIndex - 1
-  ];
-
-  indicesToPreload.forEach((index) => {
-    if (index >= 0 && index < pagesList.length) {
-      const img = new Image();
-      img.src = pagesList[index].src;
-    }
-  });
-}, [currentPageIndex, pagesList]);
-
-
-
-
-// تحديث إعادة ضبط الحالة عند تغيير الصفحة
-useEffect(() => {
-  setImageError(false);
-  setIsImageLoading(true); // إعادة التعيين لطلب التحميل الجديد
-}, [currentPageIndex]);
+  useEffect(() => {
+    setImageError(false);
+    setIsImageLoading(true);
+  }, [currentPageIndex]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -216,7 +215,6 @@ useEffect(() => {
     if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
     hideControlsTimer.current = setTimeout(() => setShowControls(false), 2500);
   };
-
 
   const STORAGE_KEY = "opinions_book1";
   const ADMIN_USERNAME = 'Michael';
@@ -374,61 +372,48 @@ useEffect(() => {
       className="min-h-screen bg-[#0d0714] text-[#f1edf5] font-sans flex flex-col justify-between selection:bg-[#a78bfa] selection:text-black" 
       dir="ltr"
     >
-
       {/* Warning Modal */}
-{showWarning && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" dir="ltr">
-    <div className="relative w-full max-w-lg bg-[#130a1e] border border-[#a78bfa]/40 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+      {showWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" dir="ltr">
+          <div className="relative w-full max-w-lg bg-[#130a1e] border border-[#a78bfa]/40 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+            <div className="text-4xl">⚠️️</div>
+            <h2 className="text-2xl font-extrabold text-[#a78bfa] tracking-wide">
+              Warning!
+            </h2>
+            <div className="text-gray-300 text-sm leading-relaxed space-y-3 bg-[#0d0714] p-4 rounded-xl border border-[#231435]">
+              <p>
+                The purchase deal you made allows you to read this manga online on the website only.
+              </p>
+              <p className="text-rose-400/90 font-medium">
+                It is entirely illegal to copy, repost or sell any chapter of this manga. When this is done legal actions will be taken.
+              </p>
+              <p className="text-amber-300/90 font-medium">
+                Also, the use of any page of this manga to train AI (Artificial Intelligence) is prohibited.
+              </p>
+            </div>
+            <button
+              onClick={handleCloseWarning}
+              className="w-full bg-[#a78bfa] hover:bg-[#c4b5fd] text-[#0d0714] font-extrabold py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer"
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
       
-      {/* زر X في الزاوية */}
-      
-
-      {/* أيقونة وعنوان التحذير */}
-      <div className="text-4xl">⚠️</div>
-      <h2 className="text-2xl font-extrabold text-[#a78bfa] tracking-wide">
-        Warning!
-      </h2>
-
-      {/* نص التحذير المطلوب */}
-      <div className="text-gray-300 text-sm leading-relaxed space-y-3 bg-[#0d0714] p-4 rounded-xl border border-[#231435]">
-        <p>
-          The purchase deal you made allows you to read this manga online on the website only.
-        </p>
-        <p className="text-rose-400/90 font-medium">
-          It is entirely illegal to copy, repost or sell any chapter of this manga. When this is done legal actions will be taken.
-        </p>
-        <p className="text-amber-300/90 font-medium">
-          Also, the use of any page of this manga to train AI (Artificial Intelligence) is prohibited.
-        </p>
-      </div>
-
-      {/* زر الفهم والإغلاق */}
-      <button
-        onClick={handleCloseWarning}
-        className="w-full bg-[#a78bfa] hover:bg-[#c4b5fd] text-[#0d0714] font-extrabold py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer"
-      >
-        I Understand
-      </button>
-
-    </div>
-  </div>
-)}
-      
-   
-      <nav className="w-full px-8 py-5 flex justify-between items-center bg-[#0d0714] border-b border-[#1a0f2b] sticky top-0 z-50">
-        <div className="flex items-center gap-3">
+      <nav className="w-full px-4 sm:px-8 py-4 flex justify-between items-center bg-[#0d0714] border-b border-[#1a0f2b] sticky top-0 z-50">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link 
             to="/Nova" 
-            className="text-[#a78bfa] hover:text-[#c4b5fd] text-sm font-medium transition duration-200 flex items-center gap-1 mr-2"
+            className="text-[#a78bfa] hover:text-[#c4b5fd] text-xs sm:text-sm font-medium transition duration-200 flex items-center gap-1 mr-1"
           >
-            <span>←</span> Home Page
+            <span>←</span> Home
           </Link>
 
-         
           <div className="flex bg-[#130a1e] p-1 rounded-xl border border-[#231435]">
             <button
               onClick={() => setActiveTab('book')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 ${
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 ${
                 activeTab === 'book'
                   ? 'bg-[#a78bfa] text-[#0d0714] shadow-md'
                   : 'text-gray-400 hover:text-white'
@@ -438,7 +423,7 @@ useEffect(() => {
             </button>
             <button
               onClick={() => setActiveTab('comments')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 flex items-center gap-1.5 ${
                 activeTab === 'comments'
                   ? 'bg-[#a78bfa] text-[#0d0714] shadow-md'
                   : 'text-gray-400 hover:text-white'
@@ -449,97 +434,73 @@ useEffect(() => {
           </div>
         </div>
         
-        <div className="text-xl font-bold text-white hidden md:block">
-          The Birth of a Tale {activeTab === 'book' && <span className="text-[#a78bfa]"> — Page {currentItem.label}</span>}
-        </div>
-
-        <div className="text-xl font-black tracking-wider text-[#cbd5e1]" dir="ltr">
+        
+        <div className="text-base sm:text-xl font-black tracking-wider text-[#cbd5e1]" dir="ltr">
           An Owl<span className="text-[#a78bfa] font-light"> of Dawn</span>
         </div>
       </nav>
 
-     
-      <main className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-6 flex-grow">
-        
-       
+      <main className="max-w-[1200px] mx-auto w-full px-2 sm:px-6 py-4 sm:py-6 flex-grow flex flex-col items-center justify-center">
         {activeTab === 'book' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="w-full max-w-4xl flex flex-col items-center justify-center">
             
-          
-            <aside className="lg:col-span-3 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-5 shadow-xl sticky top-24">
-              <h2 className="text-base font-bold text-white mb-4 border-b border-[#231435] pb-3 text-center flex items-center justify-center gap-2">
-                <span>📚</span> Novel Pages
-              </h2>
+            {/* 1. العداد العلوي لتحديد ورؤية رقم الصفحة الحالية */}
+            <div className="w-full flex items-center justify-between bg-[#130a1e] border border-[#231435] rounded-xl px-4 py-2.5 mb-4 shadow-lg">
+              <span className="text-xs font-semibold text-[#a78bfa] bg-[#a78bfa]/10 px-2.5 py-1 rounded-md border border-[#a78bfa]/20">
+                Chapter 1
+              </span>
               
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-2 max-h-[70vh] overflow-y-auto p-1 custom-scrollbar">
-                {pagesList.map((item, index) => {
-                  const isActive = currentPageIndex === index;
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentPageIndex(index)}
-                      className={`py-2.5 rounded-xl font-bold text-sm transition-all duration-200 border cursor-pointer ${
-                        isActive
-                          ? 'bg-[#a78bfa] text-[#0d0714] border-[#a78bfa] shadow-lg shadow-[#a78bfa]/20 scale-105'
-                          : 'bg-[#0d0714] text-gray-300 border-[#231435] hover:border-[#a78bfa] hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 font-mono">Page</span>
+                <select
+                  value={currentPageIndex}
+                  onChange={(e) => setCurrentPageIndex(Number(e.target.value))}
+                  className="bg-[#0d0714] text-[#a78bfa] border border-[#a78bfa]/40 rounded-lg px-2 py-1 text-xs font-bold font-mono focus:outline-none focus:border-[#a78bfa] cursor-pointer"
+                >
+                  {pagesList.map((p, idx) => (
+                    <option key={idx} value={idx}>
+                      {p.label} / {totalItems}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </aside>
+            </div>
 
-          
-            <section className="lg:col-span-9 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between items-center min-h-[75vh]">
+            {/* 2. شاشة العرض (متمركزة تماماً ومناسبة للتحكم بالهاتف والكمبيوتر) */}
+            <section className="w-full bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-2 sm:p-6 shadow-2xl flex flex-col items-center justify-center min-h-[65vh]">
               
-              <div className="w-full flex justify-between items-center border-b border-[#231435] pb-4 mb-4">
-                <span className="text-sm font-semibold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1 rounded-lg border border-[#a78bfa]/20">
-                  Chapter 1
-                </span>
-                <span className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1 rounded-lg border border-[#231435]">
-                  Page {currentItem.label}
-                </span>
-              </div>
-
-            
               <div 
                 ref={imageContainerRef}
                 onMouseMove={handleMouseMove}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 onTouchMove={handleTouchMove}
-                className={`relative flex-grow flex items-center justify-between my-2 ${currentItem.label === '18' ? 'overflow-visible' : 'overflow-hidden'}bg-[#0d0714] border-[#231435]/50 transition-all duration-300 select-none ${
+                className={`relative w-full flex items-center justify-between my-1 bg-[#0d0714] border-[#231435]/50 transition-all duration-300 select-none ${
                   isFullscreen 
-                    ? 'w-full h-full p-4 justify-center bg-[#050308]' 
-                    : `w-full rounded-xl border p-2 transition-all duration-300 ${
-    currentItem.label === '18' 
-      ? 'max-w-5xl min-h-[500px]' // مساحة واسعة ومربّعة للصفحة 18
-      : 'max-w-3xl min-h-[650px] sm:min-h-[750px]' // المقاس العمودي للطقس العادي
-  }`
+                    ? 'fixed inset-0 z-50 w-full h-full p-2 justify-center bg-[#050308]' 
+                    : 'rounded-xl border p-1 sm:p-2 max-w-3xl mx-auto min-h-[480px] sm:min-h-[650px]'
                 } ${isFullscreen && !showControls ? 'cursor-none' : 'cursor-default'}`}
               >
                 {isFullscreen && (
                   <button
                     onClick={toggleFullscreen}
-                    className={`absolute top-6 left-6 z-20 bg-[#231435]/90 hover:bg-red-500 text-white p-3 rounded-full border border-white/20 shadow-2xl transition-all duration-300 cursor-pointer backdrop-blur-md ${
+                    className={`absolute top-4 left-4 z-20 bg-[#231435]/90 hover:bg-red-500 text-white p-2.5 rounded-full border border-white/20 shadow-2xl transition-all duration-300 cursor-pointer backdrop-blur-md ${
                       showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                     }`}
                     title="Exit Fullscreen"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 )}
 
-               
+                {/* زر الصفحة السابقة */}
                 <button
                   onClick={handlePrev}
                   disabled={currentPageIndex === 0}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed left-6 sm:left-12 top-1/2 -translate-y-1/2' : ''
+                  className={`z-10 p-2 sm:p-3 rounded-full border transition-all duration-300 backdrop-blur-md ${
+                    isFullscreen ? 'fixed left-3 sm:left-8 top-1/2 -translate-y-1/2' : ''
                   } ${
                     isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
                   } ${
@@ -548,72 +509,69 @@ useEffect(() => {
                       : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
                   }`}
                 >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
+                {/* حاوية الصورة الممركزة */}
+                <div
+                  ref={zoomWrapRef}
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleDragMove}
+                  onMouseUp={stopDrag}
+                  onMouseLeave={stopDrag}
+                  style={isFullscreen ? { touchAction: 'pan-x pan-y' } : undefined}
+                  className={`flex items-center justify-center h-full relative flex-grow px-1 sm:px-2`}
+                >
+                  {/* مؤشر التحميل */}
+                  {isImageLoading && !imageError && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-2"></div>
+                      <span className="text-xs text-[#a78bfa] font-mono">Loading...{currentItem.label}...</span>
+                    </div>
+                  )}
+
+                  {imageError ? (
+                    <div className="flex flex-col items-center justify-center w-full h-[350px] sm:h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-4 text-center">
+                      <div className="text-4xl mb-2">📖</div>
+                      <h3 className="text-[#a78bfa] text-sm font-bold mb-1">Page {currentItem.label}</h3>
+                      <p className="text-[10px] sm:text-xs text-gray-400 font-mono bg-[#0d0714] p-2 rounded border border-[#231435]" dir="ltr">
+                        {currentItem.src}
+                      </p>
+                    </div>
+                  ) : (
+                    <img 
+                      src={currentItem.src} 
+                      alt={`Page ${currentItem.label}`}
+                      onLoad={() => setIsImageLoading(false)}
+                      onError={() => {
+                        setImageError(true);
+                        setIsImageLoading(false);
+                      }}
+                      style={
+                        isFullscreen && zoom > 1
+                          ? { height: `${96 * zoom}vh`, width: 'auto', maxHeight: 'none', maxWidth: 'none', margin: 'auto', flexShrink: 0 }
+                          : undefined
+                      }
+                      className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
+                        isImageLoading ? 'opacity-0' : 'opacity-100'
+                      } ${
+                        isFullscreen 
+                          ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
+                          : (currentItem.label === '18' ? 'w-full max-h-[65vh] sm:max-h-[75vh]' : 'w-full max-h-[70vh] sm:max-h-[80vh]')
+                      }`}
+                    />
+                  )}
+                </div>
                 
-               <div
-               ref={zoomWrapRef}
-  onWheel={handleWheel}
-  onMouseDown={handleMouseDown}
-  onMouseMove={handleDragMove}
-  onMouseUp={stopDrag}
-  onMouseLeave={stopDrag}
-  style={isFullscreen ? { touchAction: 'pan-x pan-y' } : undefined}
-               
-               
-               className={`flex items-center justify-center h-full relative ${isFullscreen ? 'max-w-2xl w-full mx-auto' : 'flex-grow px-2'}`}>
-  {/* مؤشر التحميل أثناء انتظار جلب الصورة */}
-  {isImageLoading && !imageError && (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
-      <div className="w-10 h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-3"></div>
-      <span className="text-xs text-[#a78bfa] font-mono">Loading...{currentItem.label}...</span>
-    </div>
-  )}
-
-  {imageError ? (
-    <div className="flex flex-col items-center justify-center w-full h-[450px] bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center">
-      <div className="text-5xl mb-3">📖</div>
-      <h3 className="text-lg font-bold text-[#a78bfa] mb-1">page{currentItem.label}</h3>
-      <p className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1.5 rounded-lg border border-[#231435] mb-2" dir="ltr">
-        {currentItem.src}
-      </p>
-    </div>
-  ) : (
-    <img 
-      src={currentItem.src} 
-      alt={`صفحة ${currentItem.label}`}
-      onLoad={() => setIsImageLoading(false)} // إخفاء مؤشر التحميل فور الجاهزية
-      onError={() => {
-        setImageError(true);
-        setIsImageLoading(false);
-
-
-      }}
-      style={
-    isFullscreen && zoom > 1
-      ? { height: `${96 * zoom}vh`, width: 'auto', maxHeight: 'none', maxWidth: 'none', margin: 'auto', flexShrink: 0 }
-      : undefined
-  }
-      
-      className={`object-contain rounded-lg shadow-2xl transition-all duration-300 pointer-events-none ${
-        isImageLoading ? 'opacity-0' : 'opacity-100'
-      } ${
-        isFullscreen 
-          ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
-          : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
-      }`}
-    />
-  )}
-</div>
-               
+                {/* زر الصفحة التالية */}
                 <button
                   onClick={handleNext}
                   disabled={currentPageIndex === totalItems - 1}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed right-6 sm:right-12 top-1/2 -translate-y-1/2' : ''
+                  className={`z-10 p-2 sm:p-3 rounded-full border transition-all duration-300 backdrop-blur-md ${
+                    isFullscreen ? 'fixed right-3 sm:right-8 top-1/2 -translate-y-1/2' : ''
                   } ${
                     isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
                   } ${
@@ -622,17 +580,17 @@ useEffect(() => {
                       : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
                   }`}
                 >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
 
-             
-              <div className="w-full flex justify-center items-center pt-4 border-t border-[#231435] mt-4">
+              {/* زر ملء الشاشة */}
+              <div className="w-full flex justify-center items-center pt-3 border-t border-[#231435] mt-3">
                 <button
                   onClick={toggleFullscreen}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-sm transition duration-200 flex items-center gap-2 cursor-pointer shadow-md border ${
+                  className={`px-5 py-2 rounded-xl font-bold text-xs sm:text-sm transition duration-200 flex items-center gap-2 cursor-pointer shadow-md border ${
                     isFullscreen
                       ? 'bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border-red-500/30'
                       : 'bg-[#231435] hover:bg-[#a78bfa] text-[#a78bfa] hover:text-[#0d0714] border-[#3b2259] hover:border-[#a78bfa]'
@@ -646,19 +604,17 @@ useEffect(() => {
           </div>
         )}
 
-        
         {activeTab === 'comments' && (
-          <div className="max-w-4xl mx-auto py-2">
-            <h1 className="text-3xl font-extrabold text-white mb-2 text-center">Book 1 — Comments & Reviews</h1>
-            <p className="text-gray-400 text-sm text-center mb-8">Share your thoughts and impressions about Book 1 specifically</p>
+          <div className="max-w-4xl mx-auto py-2 w-full">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 text-center">Book 1 — Comments & Reviews</h1>
+            <p className="text-gray-400 text-xs sm:text-sm text-center mb-6">Share your thoughts and impressions about Book 1 specifically</p>
 
-           
             <div className="flex justify-between items-center bg-[#130a1e] p-4 rounded-xl border border-[#231435] mb-6">
-              <span className="text-sm text-gray-400 font-medium">Sort opinions by:</span>
+              <span className="text-xs sm:text-sm text-gray-400 font-medium">Sort opinions by:</span>
               <select
                 value={sortby}
                 onChange={(e) => setsortby(e.target.value)}
-                className="bg-[#0d0714] border border-[#231435] text-white p-2 rounded-lg text-sm focus:outline-none focus:border-[#a78bfa]"
+                className="bg-[#0d0714] border border-[#231435] text-white p-2 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-[#a78bfa]"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -666,11 +622,10 @@ useEffect(() => {
               </select>
             </div>
 
-            
-            <form onSubmit={addcomment} className="bg-[#130a1e] p-6 rounded-xl border border-[#231435] mb-8">
+            <form onSubmit={addcomment} className="bg-[#130a1e] p-4 sm:p-6 rounded-xl border border-[#231435] mb-8">
               <div className="mb-4">
                 <span className="text-xs text-gray-400 block mb-2">Posting as:</span>
-                <span className="text-sm font-bold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1.5 rounded-md border border-[#a78bfa]/20">
+                <span className="text-xs sm:text-sm font-bold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1.5 rounded-md border border-[#a78bfa]/20">
                   {loggedinuser ? loggedinuser : 'Guest'}
                 </span>
               </div>
@@ -678,22 +633,21 @@ useEffect(() => {
                 value={commentinput}
                 onChange={(e) => setcommentinput(e.target.value)}
                 placeholder="Write your comment or review about Book 1 here..."
-                className="w-full bg-[#0d0714] border border-[#231435] rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#a78bfa] resize-none h-28 text-sm"
+                className="w-full bg-[#0d0714] border border-[#231435] rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#a78bfa] resize-none h-28 text-xs sm:text-sm"
                 required
               />
               <div className="mt-4 flex justify-end">
-                <button type="submit" className="bg-[#a78bfa] text-[#0d0714] font-bold px-6 py-2 rounded-lg text-sm hover:bg-[#c4b5fd] transition">
+                <button type="submit" className="bg-[#a78bfa] text-[#0d0714] font-bold px-6 py-2 rounded-lg text-xs sm:text-sm hover:bg-[#c4b5fd] transition">
                   Post Comment
                 </button>
               </div>
             </form>
 
-           
             <div className="space-y-4">
               {sortedcomments.map((comment) => (
                 <div
                   key={comment.id}
-                  className={`p-5 rounded-xl border transition-all duration-300 ${
+                  className={`p-4 sm:p-5 rounded-xl border transition-all duration-300 ${
                     comment.ispinned
                       ? 'bg-[#1c102e] border-[#a78bfa] shadow-md'
                       : 'bg-[#130a1e] border-[#231435]'
@@ -707,8 +661,8 @@ useEffect(() => {
 
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="font-bold text-white text-base">{comment.username}</h3>
-                      <span className="text-xs text-gray-500">
+                      <h3 className="font-bold text-white text-sm sm:text-base">{comment.username}</h3>
+                      <span className="text-[10px] sm:text-xs text-gray-500">
                         {comment.timestamp ? new Date(comment.timestamp).toLocaleDateString('en-US') : 'Just now'}
                       </span>
                     </div>
@@ -735,7 +689,7 @@ useEffect(() => {
                     )}
                   </div>
 
-                  <p className="text-gray-300 text-sm leading-relaxed mb-4 whitespace-pre-line">{comment.text}</p>
+                  <p className="text-gray-300 text-xs sm:text-sm leading-relaxed mb-4 whitespace-pre-line">{comment.text}</p>
 
                   <div className="flex items-center gap-4 text-xs text-gray-400 border-t border-[#231435] pt-3">
                     <button onClick={() => like(comment.id)} className="hover:text-emerald-400 flex items-center gap-1 transition">
@@ -753,7 +707,7 @@ useEffect(() => {
                   </div>
 
                   {replybox === comment.id && (
-                    <div className="mt-4 ml-4 p-3 bg-[#0d0714] rounded-lg border border-[#231435] flex gap-2">
+                    <div className="mt-4 sm:ml-4 p-3 bg-[#0d0714] rounded-lg border border-[#231435] flex gap-2">
                       <input
                         type="text"
                         value={replyinput}
@@ -771,7 +725,7 @@ useEffect(() => {
                   )}
 
                   {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-4 ml-6 space-y-2 border-l-2 border-[#231435] pl-4">
+                    <div className="mt-4 ml-4 sm:ml-6 space-y-2 border-l-2 border-[#231435] pl-3 sm:pl-4">
                       {comment.replies.map((reply) => (
                         <div key={reply.id} className="bg-[#0d0714]/60 p-3 rounded-lg border border-[#231435]/40 text-xs">
                           <span className="font-bold text-[#a78bfa] block mb-1">{reply.username}</span>
@@ -785,14 +739,11 @@ useEffect(() => {
             </div>
           </div>
         )}
-
       </main>
 
-     
       <footer className="w-full py-6 text-center text-xs text-gray-500 bg-[#0d0714] border-t border-[#1a0f2b]" dir="ltr">
         © 2026 An Owl of Dawn. All Rights Reserved
       </footer>
-
     </div>
   );
 }

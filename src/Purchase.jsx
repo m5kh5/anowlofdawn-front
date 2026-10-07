@@ -1,701 +1,486 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { useSecurePages, useZoom } from './bookReaderHooks'; // عدّل المسار حسب مكان الملف عندك
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
-const BOOK_ID = 'BOOK1';
-const LANG = 'eng';
-const TOTAL_PAGES = 35;
-const pagesList = Array.from({ length: TOTAL_PAGES }, (_, i) => ({ label: `${i + 1}` }));
+function Purchase() {
+    const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
 
-function Book1eng() {
-  // --- حالة التبويب النشط (book | comments) ---
-  const [activeTab, setActiveTab] = useState('book');
+    const API_URL = import.meta.env.VITE_API_URL || "https://anowlofdawn.onrender.com";
 
-  // --- حالات المانجا / الرواية ---
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const [imageError, setImageError] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(true);
+    const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [processingPayment, setProcessingPayment] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    
+    const [purchaseType, setPurchaseType] = useState('digital');
+    const [hasAccess, setHasAccess] = useState(false);
 
-  const imageContainerRef = useRef(null);
-  const hideControlsTimer = useRef(null);
 
-  const [showWarning, setShowWarning] = useState(() => {
-    const hasSeen = localStorage.getItem('hasSeenWarning');
-    return !hasSeen;
-  });
+ 
 
-  const handleCloseWarning = () => {
-    localStorage.setItem('hasSeenWarning', 'true');
-    setShowWarning(false);
-  };
+  
+    const priceBHD = 0.35;
+    const roundedUSD =5
 
-  const currentItem = pagesList[currentPageIndex];
-  const totalItems = pagesList.length;
+    const booknames = {
+    BOOK1: "Chapter 1",
+    BOOK2: "Chapter 2",
+    BOOK3: "Chapter 3",
+};
 
-  const handleNext = useCallback(() => {
-    setCurrentPageIndex((prev) => (prev < totalItems - 1 ? prev + 1 : prev));
-  }, [totalItems]);
+    // 1. مصفوفة الكتب
+const books = ["BOOK1", "BOOK2", "BOOK3"];
 
-  const handlePrev = useCallback(() => {
-    setCurrentPageIndex((prev) => (prev > 0 ? prev - 1 : prev));
-  }, []);
+// 2. حالة الكتاب المحدد (موجودة أو أضفها):
+const [selectedBookId, setSelectedBookId] = useState("BOOK1");
 
-  // --- الزوم + اللمس ---
-  const { zoom, zoomWrapRef, resetZoom, zoomHandlers, touchHandlers } = useZoom(isFullscreen, handleNext, handlePrev);
-
-  // --- جلب الصفحات من السيرفر (محمية) ---
-  const { currentSrc, loadFailed } = useSecurePages({
-    bookId: BOOK_ID,
-    lang: LANG,
-    currentPageIndex,
-    totalItems,
-  });
-  const showError = imageError || loadFailed;
-
-  // إعادة ضبط الحالات عند تغيير الصفحة
-  useEffect(() => {
-    setImageError(false);
-    setIsImageLoading(true);
-    resetZoom();
-  }, [currentPageIndex, resetZoom]);
-
-  // منع DevTools وزر الفأرة الأيمن وسحب الصور
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
-        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
-      ) {
-        e.preventDefault();
-      }
-    };
-    const handleContextMenu = (e) => e.preventDefault();
-    const handleDragStart = (e) => e.preventDefault();
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('dragstart', handleDragStart);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('dragstart', handleDragStart);
-    };
-  }, []);
-
-  // التنقل بالأسهم
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
-      if (activeTab !== 'book') return;
-
-      if (e.key === 'ArrowRight') {
-        handleNext();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrev();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNext, handlePrev, activeTab]);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      if (imageContainerRef.current?.requestFullscreen) {
-        imageContainerRef.current.requestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+const handleBookSelect = (book) => {
+    if (selectedBookId !== book) {
+        setSelectedBookId(book);
+        setHasAccess(false);
+        setErrorMessage("");
+        setStep(1)
     }
-  };
+};
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-      setShowControls(true);
-      resetZoom();
-    };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
-    };
-  }, [resetZoom]);
-
-  const handleMouseMove = () => {
-    if (!isFullscreen) return;
-    setShowControls(true);
-    if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
-    hideControlsTimer.current = setTimeout(() => setShowControls(false), 2500);
-  };
-
-  // ---------- التعليقات ----------
-  const STORAGE_KEY = "opinions_book1";
-  const ADMIN_USERNAME = 'Michael';
-
-  const [loggedinuser, setloggedinuser] = useState(null);
-  const [commentinput, setcommentinput] = useState("");
-  const [sortby, setsortby] = useState('newest');
-  const [replybox, setreplybox] = useState(null);
-  const [replyinput, setreplyinput] = useState('');
-
-  const [comments, setcomments] = useState(() => {
-    const savedcomments = localStorage.getItem(STORAGE_KEY);
-    if (savedcomments) {
-      return JSON.parse(savedcomments);
-    }
-    return [
-      {
-        id: 1,
-        username: 'shino',
-        text: 'this manga is better than owri no seraph',
-        timestamp: Date.now(),
-        likes: 505,
-        dislikes: 0,
-        likedby: [],
-        dislikedby: [],
-        ispinned: true,
-        replies: [
-          { id: 9, username: 'Fatima Al wisam', text: "sure it is" }
-        ]
-      },
-    ];
-  });
-
-  useEffect(() => {
-    const storeduser = localStorage.getItem("username");
-    if (storeduser) {
-      setloggedinuser(storeduser);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(comments));
-  }, [comments]);
-
-  const isadmin = loggedinuser?.trim().toLowerCase() === ADMIN_USERNAME.trim().toLowerCase();
-
-  const addcomment = (e) => {
-    e.preventDefault();
-    if (!commentinput.trim()) return;
-    const newcomment = {
-      id: Date.now(),
-      username: loggedinuser || 'unknown',
-      text: commentinput,
-      timestamp: Date.now(),
-      likes: 0,
-      dislikes: 0,
-      ispinned: false,
-      replies: []
-    };
-    setcomments([newcomment, ...comments]);
-    setcommentinput('');
-  };
-
-  const pinned = (id) => {
-    if (!isadmin) return;
-    setcomments(comments.map(c => c.id === id ? { ...c, ispinned: !c.ispinned } : c));
-  };
-
-  const addreply = (comid) => {
-    if (!replyinput.trim()) return;
-    setcomments(comments.map(comment => {
-      if (comment.id === comid) {
-        const currentreplies = comment.replies || [];
-        return {
-          ...comment,
-          replies: [...currentreplies, { id: Date.now(), username: loggedinuser || 'unknown', text: replyinput }]
+    useEffect(() => {
+        const checkUserAccess = async () => {
+            setLoading(false);
+    setErrorMessage("");
+            const email = localStorage.getItem("useremail");
+            if (!email) {
+        // تحويل المستخدم لصفحة تسجيل الدخول إذا لم يكن مسجلاً
+        navigate("/login");
+        return;}
+           
+            try {
+                const res = await fetch(`${API_URL}/api/check-access?email=${email}&bookId=${selectedBookId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setHasAccess(data.hasAccess);
+                    
+                    if (data.hasAccess) {
+  // تحويل مباشر للقراءة دون المرور بصفحة الشراء
+  const lang = i18n.language === 'ar' ? 'ar' : 'eng';
+  navigate(`/${selectedBookId.toLowerCase()}${lang}`);
+}
+                }
+                
+            } catch (error) {
+                console.error("Error checking access:", error);
+            } finally {
+                setLoading(false);
+            }
         };
-      }
-      return comment;
-    }));
-    setreplyinput('');
-    setreplybox(null);
-  };
 
-  const like = (id) => {
-    const user = loggedinuser || 'unknown';
-    setcomments(comments.map(c => {
-      if (c.id === id) {
-        let likedby = c.likedby || [];
-        let dislikedby = c.dislikedby || [];
-        let likes = c.likes || 0;
-        let dislikes = c.dislikes || 0;
+        checkUserAccess();
+    }, [API_URL,navigate,selectedBookId]);
 
-        if (likedby.includes(user)) {
-          likedby = likedby.filter(u => u !== user);
-          likes = Math.max(0, likes - 1);
-        } else {
-          likedby = [...likedby, user];
-          likes += 1;
-          if (dislikedby.includes(user)) {
-            dislikedby = dislikedby.filter(u => u !== user);
-            dislikes = Math.max(0, dislikes - 1);
-          }
-        }
-        return { ...c, likes, dislikes, likedby, dislikedby };
-      }
-      return c;
-    }));
-  };
+  
 
-  const dislike = (id) => {
-    const user = loggedinuser || 'unknown';
-    setcomments(comments.map(c => {
-      if (c.id === id) {
-        let likedby = c.likedby || [];
-        let dislikedby = c.dislikedby || [];
-        let likes = c.likes || 0;
-        let dislikes = c.dislikes || 0;
-
-        if (dislikedby.includes(user)) {
-          dislikedby = dislikedby.filter(u => u !== user);
-          dislikes = Math.max(0, dislikes - 1);
-        } else {
-          dislikedby = [...dislikedby, user];
-          dislikes += 1;
-          if (likedby.includes(user)) {
-            likedby = likedby.filter(u => u !== user);
-            likes = Math.max(0, likes - 1);
-          }
-        }
-        return { ...c, likes, dislikes, likedby, dislikedby };
-      }
-      return c;
-    }));
-  };
-
-  const deletecomment = (id) => {
-    if (!isadmin) return;
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      setcomments(comments.filter(c => c.id !== id));
+    if (loading) {
+        return (
+            <div className="w-full min-h-screen bg-[#0d0714] flex justify-center items-center text-[#a78bfa]">
+                <p className="text-lg font-bold">{t("Loading...")}</p>
+            </div>
+        );
     }
-  };
-
-  const sortedcomments = [...comments].sort((a, b) => {
-    if (a.ispinned && !b.ispinned) return -1;
-    if (!a.ispinned && b.ispinned) return 1;
-    if (sortby === 'newest') return b.timestamp - a.timestamp;
-    if (sortby === 'oldest') return a.timestamp - b.timestamp;
-    if (sortby === 'mostliked') return b.likes - a.likes;
-    return 0;
-  });
-
-  // ---------- ستايل الصورة (زوم في وضع الشاشة الكاملة) ----------
-  const imgStyle = isFullscreen
-    ? zoom > 1
-      ? { height: `${96 * zoom}vh`, width: 'auto', maxHeight: 'none', maxWidth: 'none', margin: 'auto', flexShrink: 0 }
-      : { margin: 'auto', flexShrink: 0, ...(currentItem.label === '18' ? {} : { maxWidth: '42rem' }) }
-    : undefined;
-
-  return (
-    <div
-      className="min-h-screen bg-[#0d0714] text-[#f1edf5] font-sans flex flex-col justify-between selection:bg-[#a78bfa] selection:text-black"
-      dir="ltr"
-    >
-
-      {/* Warning Modal */}
-      {showWarning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" dir="ltr">
-          <div className="relative w-full max-w-lg bg-[#130a1e] border border-[#a78bfa]/40 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
-
-            <div className="text-4xl">⚠️</div>
-            <h2 className="text-2xl font-extrabold text-[#a78bfa] tracking-wide">
-              Warning!
-            </h2>
-
-            <div className="text-gray-300 text-sm leading-relaxed space-y-3 bg-[#0d0714] p-4 rounded-xl border border-[#231435]">
-              <p>
-                The purchase deal you made allows you to read this manga online on the website only.
-              </p>
-              <p className="text-rose-400/90 font-medium">
-                It is entirely illegal to copy, repost or sell any chapter of this manga. When this is done legal actions will be taken.
-              </p>
-              <p className="text-amber-300/90 font-medium">
-                Also, the use of any page of this manga to train AI (Artificial Intelligence) is prohibited.
-              </p>
-            </div>
-
-            <button
-              onClick={handleCloseWarning}
-              className="w-full bg-[#a78bfa] hover:bg-[#c4b5fd] text-[#0d0714] font-extrabold py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer"
-            >
-              I Understand
-            </button>
-
-          </div>
-        </div>
-      )}
-
-      <nav className="w-full px-8 py-5 flex justify-between items-center bg-[#0d0714] border-b border-[#1a0f2b] sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/Nova"
-            className="text-[#a78bfa] hover:text-[#c4b5fd] text-sm font-medium transition duration-200 flex items-center gap-1 mr-2"
-          >
-            <span>←</span> Home Page
-          </Link>
-
-          <div className="flex bg-[#130a1e] p-1 rounded-xl border border-[#231435]">
-            <button
-              onClick={() => setActiveTab('book')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 ${
-                activeTab === 'book'
-                  ? 'bg-[#a78bfa] text-[#0d0714] shadow-md'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              📖 Read Book
-            </button>
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition duration-200 flex items-center gap-1.5 ${
-                activeTab === 'comments'
-                  ? 'bg-[#a78bfa] text-[#0d0714] shadow-md'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              💬 Comments <span className="bg-[#231435] text-[#a78bfa] px-1.5 py-0.5 rounded-full text-[10px]">{comments.length}</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="text-xl font-bold text-white hidden md:block">
-          The Birth of a Tale {activeTab === 'book' && <span className="text-[#a78bfa]"> — Page {currentItem.label}</span>}
-        </div>
-
-        <div className="text-xl font-black tracking-wider text-[#cbd5e1]" dir="ltr">
-          An Owl<span className="text-[#a78bfa] font-light"> of Dawn</span>
-        </div>
-      </nav>
-
-      <main className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-6 flex-grow">
-
-        {activeTab === 'book' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-            <aside className="lg:col-span-3 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-5 shadow-xl sticky top-24">
-              <h2 className="text-base font-bold text-white mb-4 border-b border-[#231435] pb-3 text-center flex items-center justify-center gap-2">
-                <span>📚</span> Novel Pages
-              </h2>
-
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-2 max-h-[70vh] overflow-y-auto p-1 custom-scrollbar">
-                {pagesList.map((item, index) => {
-                  const isActive = currentPageIndex === index;
-                  return (
+ if (selectedBookId === 'BOOK2' ) {
+    return (
+        <div className="min-h-screen bg-[#0d0714] text-white flex flex-col items-center justify-center p-4">
+            {/* شريط اختيار الكتب للتنقل بينها */}
+            <div className="flex justify-center items-center gap-1.5 mb-8 bg-[#130b21] p-1.5 rounded-lg border border-[#2d1b42]">
+                {books.map((book) => (
                     <button
-                      key={index}
-                      onClick={() => setCurrentPageIndex(index)}
-                      className={`py-2.5 rounded-xl font-bold text-sm transition-all duration-200 border cursor-pointer ${
-                        isActive
-                          ? 'bg-[#a78bfa] text-[#0d0714] border-[#a78bfa] shadow-lg shadow-[#a78bfa]/20 scale-105'
-                          : 'bg-[#0d0714] text-gray-300 border-[#231435] hover:border-[#a78bfa] hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
-            <section className="lg:col-span-9 bg-[#130a1e]/90 border border-[#231435] rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col justify-between items-center min-h-[75vh]">
-
-              <div className="w-full flex justify-between items-center border-b border-[#231435] pb-4 mb-4">
-                <span className="text-sm font-semibold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1 rounded-lg border border-[#a78bfa]/20">
-                  Chapter 1
-                </span>
-                <span className="text-xs text-gray-400 font-mono bg-[#0d0714] px-3 py-1 rounded-lg border border-[#231435]">
-                  Page {currentItem.label}
-                </span>
-              </div>
-
-              {/* الحاوية الرئيسية (هي اللي تدخل fullscreen) */}
-              <div
-                ref={imageContainerRef}
-                onMouseMove={handleMouseMove}
-                {...touchHandlers}
-                className={`relative flex-grow flex items-center justify-between my-2 ${
-                  currentItem.label === '18' ? 'overflow-visible' : 'overflow-hidden'
-                } bg-[#0d0714] border-[#231435]/50 transition-all duration-300 select-none ${
-                  isFullscreen
-                    ? 'w-full h-full p-4 justify-center bg-[#050308]'
-                    : `w-full rounded-xl border p-2 transition-all duration-300 ${
-                        currentItem.label === '18'
-                          ? 'max-w-5xl min-h-[500px]'
-                          : 'max-w-3xl min-h-[650px] sm:min-h-[750px]'
-                      }`
-                } ${isFullscreen && !showControls ? 'cursor-none' : 'cursor-default'}`}
-              >
-                {isFullscreen && (
-                  <button
-                    onClick={toggleFullscreen}
-                    className={`absolute top-6 left-6 z-20 bg-[#231435]/90 hover:bg-red-500 text-white p-3 rounded-full border border-white/20 shadow-2xl transition-all duration-300 cursor-pointer backdrop-blur-md ${
-                      showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                    }`}
-                    title="Exit Fullscreen"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-
-                <button
-                  onClick={handlePrev}
-                  disabled={currentPageIndex === 0}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed left-6 sm:left-12 top-1/2 -translate-y-1/2' : ''
-                  } ${
-                    isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-                  } ${
-                    currentPageIndex === 0
-                      ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
-                      : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                {/* حاوية الصورة (هي اللي تتحرك بالسكرول وقت الزوم) */}
-                <div
-                  ref={zoomWrapRef}
-                  {...zoomHandlers}
-                  style={isFullscreen ? { touchAction: 'pan-x pan-y', height: 'calc(100vh - 2rem)' } : undefined}
-                  className={
-                    isFullscreen
-                      ? `relative flex w-full overflow-auto ${zoom > 1 ? 'cursor-grab' : ''}`
-                      : 'flex items-center justify-center h-full relative flex-grow px-2'
-                  }
-                >
-                  {/* مؤشر التحميل */}
-                  {isImageLoading && !showError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#130a1e]/60 backdrop-blur-sm rounded-lg border border-[#231435]">
-                      <div className="w-10 h-10 border-4 border-[#a78bfa] border-t-transparent rounded-full animate-spin mb-3"></div>
-                      <span className="text-xs text-[#a78bfa] font-mono">Loading...{currentItem.label}...</span>
-                    </div>
-                  )}
-
-                  {showError ? (
-                    <div className="flex flex-col items-center justify-center w-full h-[450px] m-auto bg-[#130a1e] rounded-2xl border-2 border-dashed border-[#a78bfa]/30 p-8 text-center">
-                      <div className="text-5xl mb-3">📖</div>
-                      <h3 className="text-lg font-bold text-[#a78bfa] mb-1">Page {currentItem.label}</h3>
-                      <p className="text-xs text-gray-400 mb-2">
-                        Could not load this page. Please refresh and try again.
-                      </p>
-                    </div>
-                  ) : (
-                    currentSrc && (
-                      <img
-                        src={currentSrc}
-                        alt={`Page ${currentItem.label}`}
-                        onLoad={() => setIsImageLoading(false)}
-                        onError={() => {
-                          setImageError(true);
-                          setIsImageLoading(false);
-                        }}
-                        style={imgStyle}
-                        className={`object-contain rounded-lg shadow-2xl transition-opacity duration-300 pointer-events-none ${
-                          isImageLoading ? 'opacity-0' : 'opacity-100'
-                        } ${
-                          isFullscreen
-                            ? (currentItem.label === '18' ? 'w-[95vw] max-w-[1500px] max-h-[96vh]' : 'max-h-[96vh] max-w-full')
-                            : (currentItem.label === '18' ? 'w-full max-h-[75vh]' : 'w-full max-h-[80vh] sm:max-h-[85vh]')
+                        key={book}
+                        type="button"
+                        onClick={() => setSelectedBookId(book)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                            selectedBookId === book
+                                ? 'bg-[#a78bfa] text-black shadow-sm'
+                                : 'text-gray-400 hover:text-white bg-transparent'
                         }`}
-                      />
-                    )
-                  )}
-                </div>
-
-                <button
-                  onClick={handleNext}
-                  disabled={currentPageIndex === totalItems - 1}
-                  className={`z-10 p-3 sm:p-4 rounded-full border transition-all duration-300 backdrop-blur-md ${
-                    isFullscreen ? 'fixed right-6 sm:right-12 top-1/2 -translate-y-1/2' : ''
-                  } ${
-                    isFullscreen && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-                  } ${
-                    currentPageIndex === totalItems - 1
-                      ? 'bg-gray-900/40 text-gray-600 border-transparent cursor-not-allowed'
-                      : 'bg-[#130a1e]/80 text-[#a78bfa] border-[#231435] hover:bg-[#a78bfa] hover:text-[#0d0714] shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="w-full flex justify-center items-center pt-4 border-t border-[#231435] mt-4">
-                <button
-                  onClick={toggleFullscreen}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-sm transition duration-200 flex items-center gap-2 cursor-pointer shadow-md border ${
-                    isFullscreen
-                      ? 'bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border-red-500/30'
-                      : 'bg-[#231435] hover:bg-[#a78bfa] text-[#a78bfa] hover:text-[#0d0714] border-[#3b2259] hover:border-[#a78bfa]'
-                  }`}
-                >
-                  {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode'}
-                </button>
-              </div>
-
-            </section>
-          </div>
-        )}
-
-        {activeTab === 'comments' && (
-          <div className="max-w-4xl mx-auto py-2">
-            <h1 className="text-3xl font-extrabold text-white mb-2 text-center">Book 1 — Comments & Reviews</h1>
-            <p className="text-gray-400 text-sm text-center mb-8">Share your thoughts and impressions about Book 1 specifically</p>
-
-            <div className="flex justify-between items-center bg-[#130a1e] p-4 rounded-xl border border-[#231435] mb-6">
-              <span className="text-sm text-gray-400 font-medium">Sort opinions by:</span>
-              <select
-                value={sortby}
-                onChange={(e) => setsortby(e.target.value)}
-                className="bg-[#0d0714] border border-[#231435] text-white p-2 rounded-lg text-sm focus:outline-none focus:border-[#a78bfa]"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="mostliked">Most Liked</option>
-              </select>
-            </div>
-
-            <form onSubmit={addcomment} className="bg-[#130a1e] p-6 rounded-xl border border-[#231435] mb-8">
-              <div className="mb-4">
-                <span className="text-xs text-gray-400 block mb-2">Posting as:</span>
-                <span className="text-sm font-bold text-[#a78bfa] bg-[#a78bfa]/10 px-3 py-1.5 rounded-md border border-[#a78bfa]/20">
-                  {loggedinuser ? loggedinuser : 'Guest'}
-                </span>
-              </div>
-              <textarea
-                value={commentinput}
-                onChange={(e) => setcommentinput(e.target.value)}
-                placeholder="Write your comment or review about Book 1 here..."
-                className="w-full bg-[#0d0714] border border-[#231435] rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#a78bfa] resize-none h-28 text-sm"
-                required
-              />
-              <div className="mt-4 flex justify-end">
-                <button type="submit" className="bg-[#a78bfa] text-[#0d0714] font-bold px-6 py-2 rounded-lg text-sm hover:bg-[#c4b5fd] transition">
-                  Post Comment
-                </button>
-              </div>
-            </form>
-
-            <div className="space-y-4">
-              {sortedcomments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className={`p-5 rounded-xl border transition-all duration-300 ${
-                    comment.ispinned
-                      ? 'bg-[#1c102e] border-[#a78bfa] shadow-md'
-                      : 'bg-[#130a1e] border-[#231435]'
-                  }`}
-                >
-                  {comment.ispinned && (
-                    <div className="flex items-center gap-1 text-xs text-[#a78bfa] font-semibold mb-2">
-                      📌 Pinned Review
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-bold text-white text-base">{comment.username}</h3>
-                      <span className="text-xs text-gray-500">
-                        {comment.timestamp ? new Date(comment.timestamp).toLocaleDateString('en-US') : 'Just now'}
-                      </span>
-                    </div>
-
-                    {isadmin && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => pinned(comment.id)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition ${
-                            comment.ispinned
-                              ? 'bg-[#a78bfa]/20 text-[#a78bfa]'
-                              : 'bg-gray-800 text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          {comment.ispinned ? 'Unpin' : 'Pin'}
-                        </button>
-                        <button
-                          onClick={() => deletecomment(comment.id)}
-                          className="text-rose-400 bg-rose-500/10 hover:bg-rose-500 hover:text-white px-2 py-1 rounded text-xs transition"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-gray-300 text-sm leading-relaxed mb-4 whitespace-pre-line">{comment.text}</p>
-
-                  <div className="flex items-center gap-4 text-xs text-gray-400 border-t border-[#231435] pt-3">
-                    <button onClick={() => like(comment.id)} className="hover:text-emerald-400 flex items-center gap-1 transition">
-                      👍 <span>{comment.likes}</span>
-                    </button>
-                    <button onClick={() => dislike(comment.id)} className="hover:text-rose-400 flex items-center gap-1 transition">
-                      👎 <span>{comment.dislikes}</span>
-                    </button>
-                    <button
-                      onClick={() => setreplybox(replybox === comment.id ? null : comment.id)}
-                      className="text-[#a78bfa] hover:underline ml-2"
                     >
-                      Reply
+                       {t(booknames[book])}
                     </button>
-                  </div>
-
-                  {replybox === comment.id && (
-                    <div className="mt-4 ml-4 p-3 bg-[#0d0714] rounded-lg border border-[#231435] flex gap-2">
-                      <input
-                        type="text"
-                        value={replyinput}
-                        onChange={(e) => setreplyinput(e.target.value)}
-                        placeholder={`Replying as: ${loggedinuser || 'unknown'}...`}
-                        className="flex-grow bg-[#130a1e] border border-[#231435] rounded-md p-2 text-xs text-white focus:outline-none focus:border-[#a78bfa]"
-                      />
-                      <button
-                        onClick={() => addreply(comment.id)}
-                        className="bg-[#a78bfa] text-[#0d0714] font-bold px-4 py-1.5 rounded-md text-xs hover:bg-[#c4b5fd] transition"
-                      >
-                        Send
-                      </button>
-                    </div>
-                  )}
-
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-4 ml-6 space-y-2 border-l-2 border-[#231435] pl-4">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="bg-[#0d0714]/60 p-3 rounded-lg border border-[#231435]/40 text-xs">
-                          <span className="font-bold text-[#a78bfa] block mb-1">{reply.username}</span>
-                          <p className="text-gray-300">{reply.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
             </div>
-          </div>
-        )}
 
-      </main>
+            {/* كارت الصفحة المنفصلة */}
+            <div className="max-w-md w-full bg-[#130b21] p-8 rounded-2xl border border-[#2d1b42] text-center shadow-xl">
+                <div className="w-16 h-16 bg-[#2d1b42] text-[#a78bfa] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    📖
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">
+                   {t(booknames[selectedBookId])} {t("is currently unavailable")}
+                </h2>
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                    {t("This book is currently under preparation and will be released soon on  6/11/2026. You can go back and read the currently available first book.")}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => setSelectedBookId('BOOK1')}
+                    className="w-full py-3 bg-[#a78bfa] text-black font-bold rounded-xl hover:bg-[#bcb2ff] transition-all cursor-pointer"
+                >
+                    {t("Return to Book 1 (BOOK1)")}
+                </button>
+            </div>
+        </div>
+    );
+}
+if (selectedBookId === 'BOOK3' ) {
+    return (
+        <div className="min-h-screen bg-[#0d0714] text-white flex flex-col items-center justify-center p-4">
+            {/* شريط اختيار الكتب للتنقل بينها */}
+            <div className="flex justify-center items-center gap-1.5 mb-8 bg-[#130b21] p-1.5 rounded-lg border border-[#2d1b42]">
+                {books.map((book) => (
+                    <button
+                        key={book}
+                        type="button"
+                        onClick={() => setSelectedBookId(book)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                            selectedBookId === book
+                                ? 'bg-[#a78bfa] text-black shadow-sm'
+                                : 'text-gray-400 hover:text-white bg-transparent'
+                        }`}
+                    >
+                       {t(booknames[book])}
+                    </button>
+                ))}
+            </div>
 
-      <footer className="w-full py-6 text-center text-xs text-gray-500 bg-[#0d0714] border-t border-[#1a0f2b]" dir="ltr">
-        © 2026 An Owl of Dawn. All Rights Reserved
-      </footer>
-
-    </div>
-  );
+            {/* كارت الصفحة المنفصلة */}
+            <div className="max-w-md w-full bg-[#130b21] p-8 rounded-2xl border border-[#2d1b42] text-center shadow-xl">
+                <div className="w-16 h-16 bg-[#2d1b42] text-[#a78bfa] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    📖
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">
+                   {t(booknames[selectedBookId])} {t("is currently unavailable")}
+                </h2>
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                    {t("This book is currently under preparation and will be released soon in December. You can go back and read the currently available first book.")}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => setSelectedBookId('BOOK1')}
+                    className="w-full py-3 bg-[#a78bfa] text-black font-bold rounded-xl hover:bg-[#bcb2ff] transition-all cursor-pointer"
+                >
+                    {t("Return to Book 1 (BOOK1)")}
+                </button>
+            </div>
+        </div>
+    );
 }
 
-export default Book1eng;
+    return (
+        <PayPalScriptProvider options={{ "client-id" :import.meta.env.VITE_PAYPAL_CLIENT_ID, currency: "USD" }}>
+            <div className="w-full min-h-screen bg-[#0d0714] text-[#f1edf5] font-sans flex flex-col justify-between overflow-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+                
+                {/* Navbar */}
+                <nav className="bg-[#160d22]/95 backdrop-blur-md border-b border-[#2d1b42] px-8 py-4 flex justify-between items-center">
+                    {step === 1 ? (
+                        <Link to="/" className="text-sm font-medium text-[#a78bfa] hover:underline">
+                            {t('← Home')}
+                        </Link>
+                    ) : (
+                        <button 
+                            onClick={() => {
+                                setStep(1);
+                                setErrorMessage("");
+                            }} 
+                            className="text-sm font-medium text-[#a78bfa] hover:underline cursor-pointer bg-transparent border-0"
+                        >
+                            {t('← Back to Options')}
+                        </button>
+                    )}
+                    <div className="text-2xl font-black tracking-wider text-[#cbd5e1]">
+                        An Owl<span className="text-[#a78bfa] font-light"> of Dawn</span>
+                    </div>
+                </nav>
+
+                {/* Main Content */}
+                <main className="max-w-4xl w-full mx-auto px-6 py-12 flex-grow flex flex-col justify-center items-center">
+                    
+                    
+                    {/* Step 1: Choice */}
+                    {step === 1 && (
+                        <div className="w-full max-w-2xl bg-[#160d22] p-8 rounded-xl border border-[#2d1b42] shadow-xl">
+                            <h2 className="text-2xl font-extrabold text-white mb-2 text-center">
+                                {t('Complete Your Purchase')}
+                            </h2>
+                            <p className="text-gray-400 text-sm text-center mb-8">
+                                {t('Please select your preferred book format to proceed')}
+                            </p>
+                            {/* --- شريط أزرار صغير مدمج للغاية --- */}
+<div className="flex justify-center items-center gap-1.5 mb-6 bg-[#0d0714] p-1 rounded-lg border border-[#2d1b42] w-fit mx-auto">
+    {books.map((book) => (
+        <button
+            key={book}
+            type="button"
+            onClick={() =>{ setSelectedBookId(book);
+            setHasAccess(false);
+            setErrorMessage(""); 
+  setStep(1);          
+            }}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                selectedBookId === book
+                    ? 'bg-[#a78bfa] text-black shadow-sm'
+                    : 'text-gray-400 hover:text-white bg-transparent'
+            }`}
+        >
+           {t(booknames[book])} 
+        </button>
+    ))}
+</div>
+
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                                <div 
+                                    onClick={() => setPurchaseType('digital')}
+                                    className={`cursor-pointer p-6 rounded-xl border transition-all flex flex-col items-center justify-center text-center ${
+                                        purchaseType === 'digital'
+                                        ? 'border-[#a78bfa] bg-[#2d1b42]/40 shadow-lg shadow-[#a78bfa]/5'
+                                        : 'border-[#2d1b42] bg-[#0d0714] hover:border-gray-600'
+                                    }`}
+                                >
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${purchaseType === 'digital' ? 'bg-[#a78bfa] text-black' : 'bg-[#160d22] text-gray-400'}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-lg font-bold text-white block mb-1">{t('Digital Edition')}</span>
+                                    <span className="text-xs text-gray-400">{t('Read instantly on the website')}</span>
+                                </div>
+
+                                <div 
+                                    onClick={() => setPurchaseType('physical')}
+                                    className={`cursor-pointer p-6 rounded-xl border transition-all flex flex-col items-center justify-center text-center ${
+                                        purchaseType === 'physical'
+                                        ? 'border-[#a78bfa] bg-[#2d1b42]/40 shadow-lg shadow-[#a78bfa]/5'
+                                        : 'border-[#2d1b42] bg-[#0d0714] hover:border-gray-600'
+                                    }`}
+                                >
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${purchaseType === 'physical' ? 'bg-[#a78bfa] text-black' : 'bg-[#160d22] text-gray-400'}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-lg font-bold text-white block mb-1">{t('Printed Book')}</span>
+                                    <span className="text-xs text-gray-400">{t('High-quality printed version that can be delivered to you')}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-[#0d0714] p-6 rounded-lg border border-[#2d1b42] mb-6">
+                                {purchaseType === 'digital' ? (
+                                    <div className="space-y-3">
+                                        <h4 className="text-sm font-bold text-[#a78bfa] uppercase tracking-wider">{t('Digital Benefits')}</h4>
+                                        <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                                            <li>{t('Instant access upon payment approval')}</li>
+                                            <li>{t('No shipping fees')}</li>
+                                            <li>{t('Lifetime updates')}</li>
+                                        </ul>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <h4 className="text-sm font-bold text-[#a78bfa] uppercase tracking-wider">{t('Shipping Information')}</h4>
+                                        <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                                            <li>{t('Delivery within 3-5 business days')}</li>
+                                            <li>{t('Secure packaging to protect the book')}</li>
+                                            <li>{t('Tracking number provided via email')}</li>
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            {purchaseType === 'digital' ? (
+                                <button 
+                                    onClick={() => setStep(2)}
+                                    className="w-full py-3.5 bg-[#a78bfa] text-black font-bold rounded-lg text-sm transition-all hover:bg-[#bcb2ff] hover:shadow-lg hover:shadow-[#a78bfa]/20 cursor-pointer"
+                                >
+                                    {t('Proceed to Digital Access')}
+                                </button>
+                            ) : (
+                               <button 
+    disabled
+    className="w-full py-3.5 bg-[#2d1b42] text-gray-400 font-bold rounded-lg text-sm cursor-not-allowed opacity-70"
+>
+    {t('Shipping Option Currently Unavailable')}
+</button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Step 2: Payment & Confirmation */}
+                    {step === 2 && (
+                        <>
+                            {!hasAccess ? (
+                                <div className="w-full max-w-xl bg-[#160d22] p-8 rounded-xl border border-[#2d1b42] shadow-xl text-center">
+                                    <h2 className="text-2xl font-extrabold text-white mb-2">
+                                        {t('Digital Access Payment')}
+                                    </h2>
+                                    <p className="text-gray-400 text-sm mb-6">
+                                        {t('Complete your payment via PayPal to unlock immediate access to the chapter.')}
+                                    </p>
+
+                                    {errorMessage && (
+                                        <div className="mb-4 p-3 bg-red-900/40 border border-red-500 rounded text-red-200 text-xs">
+                                            {errorMessage}
+                                        </div>
+                                    )}
+
+                                    <div className="bg-[#0d0714] p-6 rounded-lg border border-[#2d1b42] mb-6 flex justify-between items-center">
+                                        <div className="text-left">
+                                            <span className="text-xs uppercase tracking-wider text-gray-400 block mb-1">
+                                        
+                                               {t(booknames[selectedBookId])}
+                                            </span>
+                                            <span className="text-base font-bold text-white">
+                                                {t('Digital Chapter Access')}
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                           
+                                            <span className="text-xs text-gray-400 block">
+                                                ≈ ${roundedUSD} USD
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-8">
+                                        <label className="text-xs font-bold text-[#a78bfa] uppercase tracking-wider block mb-3 text-left">
+                                            {t('Select Payment Method')}
+                                        </label>
+                                        <div className="p-4 rounded-xl border border-[#a78bfa] bg-[#2d1b42]/40 shadow-lg shadow-[#a78bfa]/5 flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 shadow">
+                                                    <svg className="w-full h-full text-[#003087]" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.761.761 0 0 1 .752-.638h7.243c2.4 0 4.298.543 5.39 1.543 1.037.95 1.373 2.378.948 4.02-.022.086-.048.172-.075.257-.61 2.39-2.185 4.062-4.557 4.834a9.7 9.7 0 0 1-3.082.443H8.928a.76.76 0 0 0-.751.638l-.94 5.92a.64.64 0 0 1-.161.602z"/>
+                                                    </svg>
+                                                </div>
+                                                <span className="font-bold text-white text-sm">PayPal</span>
+                                            </div>
+                                            <span className="text-xs text-[#a78bfa] bg-[#a78bfa]/10 px-2.5 py-1 rounded-full border border-[#a78bfa]/30 font-medium">
+                                                {t('Selected')}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {processingPayment ? (
+                                        <div className="py-4 text-[#a78bfa] text-sm animate-pulse">
+                                            {t("Verifying your payment, please wait...")}
+                                        </div>
+                                    ) : (
+                                        <PayPalButtons
+                                            style={{ layout: "vertical", color: "gold", shape: "rect" }}
+                                            createOrder={async () => {
+                                                setErrorMessage("");
+                                                const email = localStorage.getItem("useremail");
+                                                
+                                                if (!email) {
+                                                    setErrorMessage(t("Please log in before completing the purchase."));
+                                                    throw new Error("User email not found");
+                                                }
+
+                                                try {
+                                                    const response = await fetch(`${API_URL}/api/create-paypal-order`, {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ bookId: selectedBookId, email })
+                                                    });
+                                                    
+                                                    if (!response.ok) {
+                                                        throw new Error("Failed to create PayPal order");
+                                                    }
+
+                                                    const order = await response.json();
+                                                    return order.id;
+                                                } catch (err) {
+                                                    setErrorMessage(t("Could not initialize order. Please try again."));
+                                                    throw err;
+                                                }
+                                            }}
+                                            onApprove={async (data, actions) => {
+                                                setProcessingPayment(true);
+                                                const email = localStorage.getItem("useremail");
+                                                try {
+                                                    const response = await fetch(`${API_URL}/api/orders`, {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ orderID: data.orderID, email ,bookId: selectedBookId}),
+                                                    });
+                                                    const result = await response.json();
+                                                    console.log("Server said:", result);
+                                                    
+                                                    
+
+                                                    if (result.success) {
+                                                        setHasAccess(true);
+                                                        const lang = i18n.language === 'ar' ? 'ar' : 'eng';
+                                                       
+                                                    } else {
+                                                        setErrorMessage(t("Payment verification failed. Please contact support."));
+                                                    }
+                                                } catch (error) {
+                                                    console.error("Error confirming payment:", error);
+                                                    setErrorMessage(t("Server connection error. Please try again."));
+                                                } finally {
+                                                    setProcessingPayment(false);
+                                                }
+                                            }}
+                                            onError={(err) => {
+                                                console.error("PayPal Error:", err);
+                                                setErrorMessage(t("An error occurred with PayPal. Please try again."));
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="w-full max-w-2xl bg-[#160d22] p-8 rounded-xl border border-[#a78bfa] shadow-2xl text-center space-y-6">
+                                    <div className="w-16 h-16 bg-[#a78bfa]/20 border border-[#a78bfa] rounded-full flex items-center justify-center mx-auto text-[#a78bfa]">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+
+                                    <h2 className="text-2xl font-black text-white">
+                                        {t('Payment Successful!')}
+                                    </h2>
+                                    <p className="text-gray-300 text-sm">
+                                        {t('Thank you for your purchase. You now have full digital access to the chapter.')}
+                                    </p>
+
+                                    <div className="p-6 bg-[#0d0714] rounded-lg border border-[#2d1b42] text-left">
+                                        <h3 className="text-lg font-bold text-[#a78bfa] mb-2">
+                                            {t('Chapter Access Unlocked')}
+                                        </h3>
+                                        <p className="text-xs text-gray-400 mb-4">
+                                            {t('Click below to start reading the digital content directly in your browser.')}
+                                        </p>
+                                        
+                                        <Link 
+    to={i18n.language === 'ar' ? `/${selectedBookId.toLowerCase()}ar` : `/${selectedBookId.toLowerCase()}eng`} 
+    className="block text-center w-full py-3 bg-[#a78bfa] text-black font-bold rounded-lg text-sm hover:bg-[#bcb2ff] transition-all"
+>
+    {t('Start Reading')} {t(booknames[selectedBookId])}
+</Link>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                </main>
+
+                {/* Footer */}
+                <footer className="w-full bg-[#0d0714] border-t border-[#2d1b42] py-4 px-8 text-center text-xs text-gray-500">
+                    © 2026 An Owl of Dawn. All Rights Reserved
+                </footer>
+            </div>
+        </PayPalScriptProvider> 
+    );
+}
+
+export default Purchase;
